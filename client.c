@@ -12,6 +12,8 @@
 #include <unistd.h>
 #include "rio.h"
 
+//testing
+
 typedef struct{
     char **ele;
     int idx;
