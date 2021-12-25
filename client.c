@@ -19,9 +19,9 @@ typedef struct{
 
 unsigned int buf_max_size = 1024;
 
-static void print_help()
+static void print_help(char *prog)
 {
-    printf("\nWEB CLIENT HELP\n");
+    printf("\nUsage: %s [options] [args]\n", prog);
     printf("\tclient -h		#usage\n");
     printf("\tclient -c serverIP	#connect to server(IPv4)\n");
     printf("\tclient -f fileName	#download file\n");
@@ -400,7 +400,7 @@ int main(int argc, char **argv)
     while ((ch = getopt(argc, argv, "hf:c:p:d:")) != -1) {
         switch (ch) {
         case 'h':
-            print_help();
+            print_help(argv[0]);
             break;
         case 'f':
             if (strlen(argv[optind - 1]) > max_size) {
