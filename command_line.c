@@ -6,6 +6,8 @@
 #include <termios.h>
 #include <errno.h>
 #include <sys/ioctl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include "command_line.h"
 #include "mem_manage.h"
 
@@ -95,8 +97,8 @@ static char *cmd_line_noTTY(){
     }
 }
 
-static bool enable_raw_mode(){
-    struct termios raw;
+static bool enable_raw_mode(struct termios *orig){
+    struct termios raw = *orig;
 
     /* input modes: no break, no CR to NL, no parity check, no strip char,
      * no start/stop output control. */
@@ -253,6 +255,7 @@ int cmd_line_edit(char* buf, char* prompt, size_t len){
     cls.pos = 0;
     cls.col = get_columns();
 
+    write(STDOUT_FILENO, cls.prompt, 5);
     while(true){
         n = read(STDIN_FILENO, &c, 1);
 
@@ -339,17 +342,17 @@ static int cmd_line_raw(char *buf, char *prompt){
 
     if(tcgetattr(STDIN_FILENO, &orig) < 0)
 	return -1;
-    if(!enable_raw_mode())
+    if(!enable_raw_mode(&orig))
 	return -1;
     n = cmd_line_edit(buf, prompt, max_line);
     if(!disable_raw_mode(&orig))
         return -1;
+    printf("\n");
     return n;
 }
 
 char *cmd_line(){
     char *prompt = "cmd> ";
-    size_t len;
     char *buf = calloc(max_line, sizeof(char));
     mem_alloc_succ(buf);
 
@@ -357,20 +360,48 @@ char *cmd_line(){
 	return cmd_line_noTTY();
     }
 
-    /*printf("%s", prompt);
-    fflush(stdout);
-    if(fgets(buf, max_line, stdin) == NULL)
+    if(cmd_line_raw(buf, prompt) == 0){
+        free(buf);
         return NULL;
-    len = strlen(buf);
-    while(len && buf[len - 1] == '\n' || buf[len - 1] == '\r'){
-        len--;
-	buf[len] = '\0';
-    }*/
-    cmd_line_raw(buf, prompt);
+    }
     return buf;
 }
 
-int add_history_cmd(const char *file_name)
+int add_history_cmd(const char *cmd)
+{
+    char *cmd_copy;
+
+    if (history_max_len == 0)
+        return 0;
+
+    /* Initialization on first call. */
+    if (history == NULL) {
+        history = malloc(sizeof(char *) * history_max_len);
+        if (history == NULL)
+            return 0;
+        memset(history, 0, (sizeof(char *) * history_max_len));
+    }
+    /* Don't add duplicated lines. */
+    if (history_len && !strcmp(history[history_len - 1], cmd))
+        return 0;
+
+    /* Add an heap allocated copy of the line in the history.
+     * If we reached the max length, remove the older line. */
+    cmd_copy = strdup(cmd);
+
+    if (!cmd_copy)
+        return 0;
+    if (history_len == history_max_len) {
+        free(history[0]);
+        memmove(history, history + 1, sizeof(char *) * (history_max_len - 1));
+        history_len--;
+    }
+    history[history_len] = cmd_copy;
+    history_len++;
+    return 1;
+}
+
+int save_history_cmd(const char *file_name)
 {
     mode_t old_umask = umask(S_IXUSR | S_IRWXG | S_IRWXO);
     FILE *fp;
@@ -383,6 +414,37 @@ int add_history_cmd(const char *file_name)
     chmod(file_name, S_IRUSR | S_IWUSR);
     for (j = 0; j < history_len; j++)
         fprintf(fp, "%s\n", history[j]);
+    fclose(fp);
+    return 0;
+}
+
+static void free_History()
+{
+    if (history) {
+        for (int i = 0; i < history_len; i++)
+            free(history[i]);
+        free(history);
+    }
+}
+
+int load_history(const char *file_name)
+{
+    FILE *fp = fopen(file_name, "r");
+    char buf[max_line];
+
+    if (fp == NULL)
+        return -1;
+
+    while (fgets(buf, max_line, fp) != NULL) {
+        char *p;
+
+        p = strchr(buf, '\r');
+        if (!p)
+            p = strchr(buf, '\n');
+        if (p)
+            *p = '\0';
+        add_history_cmd(buf);
+    }
     fclose(fp);
     return 0;
 }
