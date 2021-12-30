@@ -3,7 +3,10 @@
 #include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
+#include <ctype.h>
 #include "command_line.h"
+#include "console.h"
+#include "mem_manage.h"
 
 void usage(char *name){
     printf("Usage: %s [options] [args]\n", name);
@@ -41,8 +44,9 @@ int main(int argc, char **argv){
 		break;
 	}
     }
-    //char *p = command_line();
-    //printf("%s\n", p);
-    cmd_line();
+    console_init();
+    if(!run_console()){
+        return -1;
+    }
     return 0; 
 }
