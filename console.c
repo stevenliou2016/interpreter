@@ -6,6 +6,7 @@
 #include "mem_manage.h"
 #include "command_line.h"
 #include "queue.h"
+#include "client.h"
 
 static cmd_ptr cmd_list = NULL;
 static bool help_operation(int, char **);
@@ -53,17 +54,15 @@ char **parse_cmd(int *argc, char *cmd){
         return NULL;
     }
     char **argv_p = argv;
-    *argv_p = calloc(string_size, sizeof(char));
-    if(!mem_alloc_succ(*argv_p)){
-        return NULL;
-    }
     *argv_p = strtok(cmd, &delim);
+    (*argc)++;
+
     while(*argv_p++){
-        *argv_p = calloc(string_size, sizeof(char));
-	if(!mem_alloc_succ(*argv_p)){
-            return NULL;
-        }
         *argv_p = strtok(NULL, &delim);
+	if(*argv_p){
+            (*argc)++;
+
+	}
     }
     return argv;
 }
@@ -202,7 +201,9 @@ static bool web_operation(int argc, char **argv){
 }
 
 static bool client_operation(int argc, char **argv){
-    quit_flag = true;
+    if(!client(argc, argv)){
+        return false;
+    }
     return true;
 }
 
