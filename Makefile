@@ -1,8 +1,8 @@
 CC = gcc
 CFLAGS = -g -c
-OBJS = client.o rio.o
+OBJS = interpreter.o command_line.o mem_manage.o console.o queue.o client.o rio.o
 
-client: $(OBJS)
+interpreter: $(OBJS)
 	$(CC) $(OBJS) -o $@
 
 %.o: %.c
@@ -12,4 +12,4 @@ client: $(OBJS)
 .PHONY: clean
 
 clean:
-	rm client $(OBJS)
+	rm interpreter $(OBJS)
