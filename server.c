@@ -12,16 +12,18 @@
 #include <signal.h>
 #include <time.h>
 #include <dirent.h>
+#include <errno.h>
 #include "mem_manage.h"
 #include "rio.h"
 #include "server.h"
 
 static void print_help(){
     printf("\tCommand\t\tDescription\n");
-    printf("\tweb -h\t\t#Usage\n");
-    printf("\tweb\t\t#Use default port(9999), serve current directory\n");
-    printf("\tweb -d dir\t#Use default port(9999), serve given directory\n");
-    printf("\tweb -p port\t#Use given port, serve current directory\n");
+    printf("\tserver\t\t#Use default port(9999), serve current directory\n");
+    printf("\tserver -h\t#Usage\n");
+    printf("\tserver -s \tInactivate server\n");
+    printf("\tserver -d dir\t#Use default port(9999), serve given directory\n");
+    printf("\tserver -p port\t#Use given port, serve current directory\n");
 }
 
 int open_listen_fd(size_t port){
@@ -247,26 +249,46 @@ void process(int fd, struct sockaddr_in *clientaddr){
 bool server(int argc, char **argv){
     int c = 'h';
     size_t dir_max_len = 256;
+    size_t len = 0;
     char *dir = malloc(dir_max_len);
     if(!mem_alloc_succ(dir)){
-        return -1;
+        return false;
     }
     memset(dir, 0, dir_max_len);
     if(!getcwd(dir, dir_max_len)){
-        return -1;
+        return false;
     }
     size_t port = 9999;
     struct sockaddr_in clientaddr;
     socklen_t clientlen = sizeof clientaddr;
     int connfd = 0;
 
-    while((c = getopt(argc, argv, "hd:p:")) != -1){
+    while((c = getopt(argc, argv, "hd:p:s")) != -1){
         switch(c){
             case 'h':
                 print_help();
+                return false;
 		break;
 	    case 'd':
-		strncpy(dir, optarg, strlen(optarg));
+		len = strlen(optarg);
+                while(len >= dir_max_len){
+                    dir_max_len *= 2;
+                }
+		if(dir_max_len != 256){
+	            char *new_dir = realloc(dir, dir_max_len);
+	            if(new_dir == NULL){
+                        printf("memory alloction failed\n");
+	    	        return false;
+		    }
+	            dir = new_dir;
+		}
+	        strncpy(dir, optarg, len);
+	        dir[len] = '\0';
+		if(chdir(dir) == -1){
+                    return false;
+		}
+		break;
+	    case 's':
 		break;
 	    case 'p':
 		port = atoi(optarg);
@@ -283,10 +305,7 @@ bool server(int argc, char **argv){
 	}
     }
     int fd = open_listen_fd(port);
-    if (fd > 0) {
-        printf("listen on port %ld, fd is %d\n", port, fd);
-    } else {
-        perror("ERROR");
+    if (fd < 0) {
         exit(fd);
     }
     
@@ -298,5 +317,5 @@ bool server(int argc, char **argv){
 	process(connfd, &clientaddr);
         close(connfd);
     }
-    return 0;
+    return true;
 }
