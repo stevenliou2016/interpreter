@@ -6,11 +6,12 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <time.h>
 #include "console.h"
 #include "mem_manage.h"
 #include "command_line.h"
 #include "queue.h"
-#include "client.h"
+#include "client/client.h"
 #include "server.h"
 
 static cmd_ptr cmd_list = NULL;
@@ -33,11 +34,12 @@ pid_t pid = -2; // id of server process
 
 void console_init(){
     cmd_list = NULL;
+    srand(time(NULL));
     add_cmd("help", "\t#Show documents", help_operation);
     add_cmd("new", "\t#Create a queue", q_new_operation);
     add_cmd("free", "\t#Delete a queue", q_free_operation);
-    add_cmd("ih", " str \t#Insert str at head", q_insert_head_operation);
-    add_cmd("it", " str \t#Insert str at tail", q_insert_tail_operation);
+    add_cmd("ih", " str [n]\t#Insert n times of str at head, n>=1. Generate a string if str is RAND", q_insert_head_operation);
+    add_cmd("it", " str [n]\t#Insert n times of str at tail, n>=1. Generate a string if str is RAND", q_insert_tail_operation);
     add_cmd("rh", "\t#Remove the first element", q_remove_head_operation);
     add_cmd("size", "\t#Show the size of queue", q_size_operation);
     add_cmd("reverse", "\t#Reverse the queue", q_reverse_operation);
@@ -73,6 +75,14 @@ char **parse_cmd(int *argc, char *cmd){
     return argv;
 }
 
+static bool q_is_NULL(){
+   if(!q){
+       printf("the queue is NULL\n");
+       return true;
+   }
+   return false;
+}
+
 static bool help_operation(int argc, char **argv){
     cmd_ptr clist = cmd_list;
 
@@ -104,9 +114,11 @@ static bool q_show_operation(int argc, char **argv){
 }
 
 static bool q_new_operation(int argc, char **argv){
+    if(q){
+        free(q);
+    }
     q = q_new();
-    if(q == NULL){
-        printf("malloc failed\n");
+    if(!mem_alloc_succ(q)){
         return false;
     }
     q_show_operation(argc, argv);
@@ -114,36 +126,107 @@ static bool q_new_operation(int argc, char **argv){
 }
 
 static bool q_free_operation(int argc, char **argv){
-    if(q == NULL){
-        printf("please create a queue first\n");
-	return false;
+    if(q_is_NULL()){
+        return false;
     }
     q_free(q);
-    printf("q is freed\n");
+    printf("the queue is freed\n");
     return true;
 }
 
-static bool q_insert_head_operation(int argc, char **argv){
-    if(q == NULL){
-        printf("please create a queue first\n");
-	return false;
+char* random_string(){
+    char alphabets[] = "abcdefghijklmnopqrstuvwxyz";
+    size_t max_len = 10;
+    size_t min_len = 5;
+    size_t len = 0;
+
+    while(len < min_len){
+        len = rand() % (max_len + 1);
     }
-    if(!q_insert_head(q, *(argv + 1))){
-        printf("insert a string at the head of queue failed\n");
+    char *s = malloc(len + 1);
+    if(!mem_alloc_succ(s)){
+        return NULL;
+    }
+    memset(s, 0, len + 1);
+    for(int i = 0; i < len; i++){
+        s[i] = alphabets[rand() % 26];
+    }
+    s[len] = '\0';
+
+    return s;
+}
+
+static bool q_insert_head_operation(int argc, char **argv){
+    if(q_is_NULL() || argc < 2){
         return false;
+    }
+    int n = 1;
+    if(argc > 2){
+        n = atoi(argv[2]);
+        if(n < 1){
+            printf("n must be greater than 0\n");
+            return false;
+        }
+    }
+    char *s = NULL;
+    bool is_random = false;
+    if(strlen(*(argv + 1)) == 4 && strncmp("RAND", *(argv + 1), 4) == 0){
+        is_random = true;
+    }else{
+        s = *(argv + 1);
+    }
+    for(int i = 0; i < n; i++){
+        if(is_random){
+            s = random_string();
+	}
+        if(!q_insert_head(q, s)){
+            printf("insert a string at the head of queue failed\n");
+	    if(is_random){
+	        free(s);
+	    }
+            return false;
+        }
+	if(is_random){
+	    free(s);
+	}
     }
     q_show_operation(argc, argv);
     return true;
 }
 
 static bool q_insert_tail_operation(int argc, char **argv){
-    if(q == NULL){
-        printf("please create a queue first\n");
-	return false;
-    }
-    if(!q_insert_tail(q, *(argv + 1))){
-        printf("insert an element at the tail of queue failed\n");
+    if(q_is_NULL() || argc < 2){
         return false;
+    }
+    int n = 1;
+    if(argc > 2){
+        n = atoi(argv[2]);
+        if(n < 1){
+            printf("n must be greater than 0\n");
+            return false;
+        }
+    }
+    char *s = NULL;
+    bool is_random = false;
+    if(strlen(*(argv + 1)) == 4 && strncmp("RAND", *(argv + 1), 4) == 0){
+        is_random = true;
+    }else{
+        s = *(argv + 1);
+    }
+    for(int i = 0; i < n; i++){
+        if(is_random){
+            s = random_string();
+	}
+        if(!q_insert_tail(q, s)){
+            printf("insert a string at the tail of queue failed\n");
+	    if(is_random){
+	        free(s);
+	    }
+            return false;
+        }
+	if(is_random){
+	    free(s);
+	}
     }
     q_show_operation(argc, argv);
 
@@ -151,9 +234,8 @@ static bool q_insert_tail_operation(int argc, char **argv){
 }
 
 static bool q_remove_head_operation(int argc, char **argv){
-    if(q == NULL){
-        printf("please create a queue first\n");
-	return false;
+    if(q_is_NULL()){
+        return false;
     }
     size_t len = strlen(q->head->value);
     char *head = malloc(len + 1);
@@ -171,18 +253,16 @@ static bool q_remove_head_operation(int argc, char **argv){
 }
 
 static bool q_size_operation(int argc, char **argv){
-    if(q == NULL){
-        printf("please create a queue first\n");
-	return false;
+    if(q_is_NULL()){
+        return false;
     }
     printf("the size of queue is %d\n", q_size(q));
     return true;
 }
 
 static bool q_reverse_operation(int argc, char **argv){
-    if(q == NULL){
-        printf("please create a queue first\n");
-	return false;
+    if(q_is_NULL()){
+        return false;
     }
     q_reverse(q);
     q_show_operation(argc, argv);
@@ -191,8 +271,7 @@ static bool q_reverse_operation(int argc, char **argv){
 }
 
 static bool q_sort_operation(int argc, char **argv){
-    if(q == NULL){
-        printf("please create a queue first\n");
+    if(q_is_NULL()){
         return false;
     }
     q_sort(q);
@@ -246,6 +325,9 @@ static bool client_operation(int argc, char **argv){
 
 static bool quit_operation(int argc, char **argv){
     quit_flag = true;
+    if(q){
+        q_free_operation(argc, argv);
+    }
     /* inactivate server if it's running */
     if(pid != -2){
         kill(pid, SIGTERM);
