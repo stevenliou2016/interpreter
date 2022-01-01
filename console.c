@@ -2,11 +2,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <unistd.h>
+#include <signal.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include "console.h"
 #include "mem_manage.h"
 #include "command_line.h"
 #include "queue.h"
 #include "client.h"
+#include "server.h"
 
 static cmd_ptr cmd_list = NULL;
 static bool help_operation(int, char **);
@@ -19,11 +24,12 @@ static bool q_size_operation(int, char **);
 static bool q_reverse_operation(int, char **);
 static bool q_sort_operation(int, char **);
 static bool q_show_operation(int, char **);
-static bool web_operation(int, char **);
+static bool server_operation(int, char **);
 static bool client_operation(int, char **);
 static bool quit_operation(int, char **);
 queue_t *q = NULL;
 bool quit_flag = false;
+pid_t pid = -2; // id of server process
 
 void console_init(){
     cmd_list = NULL;
@@ -37,8 +43,8 @@ void console_init(){
     add_cmd("reverse", "\t#Reverse the queue", q_reverse_operation);
     add_cmd("sort", "\t#Sort the queue", q_sort_operation);
     add_cmd("show", "\t#Show the queue", q_show_operation);
-    add_cmd("web", "\t#Activate web server", web_operation);
-    add_cmd("client", "\t#Activate web client", client_operation);
+    add_cmd("server", "\t#Activate server", server_operation);
+    add_cmd("client", "\t#Activate client", client_operation);
     add_cmd("quit", "\t#Exit program", quit_operation);
 }
 
@@ -195,8 +201,39 @@ static bool q_sort_operation(int argc, char **argv){
     return true;
 }
 
-static bool web_operation(int argc, char **argv){
-    quit_flag = true;
+// for signal SIGCLD
+static void sig_cld(){
+    pid = -2; // reset pid
+}
+
+static bool server_operation(int argc, char **argv){
+    if(argc > 1 && strncmp(argv[1], "-s", 2) == 0 && pid != -2){
+        kill(pid, SIGTERM);
+	pid = -2;
+	return true;
+    }
+    if(pid > 0){
+        printf("server is running\n");
+	return true;
+    }
+    signal(SIGCLD, sig_cld);
+    pid = fork();
+    if(pid == -1){ 
+	printf("fork failed\n");
+	return false;
+    }else if(pid == 0){ // child
+        if(!server(argc, argv)){
+            pid = -2;
+            exit(-1);
+        }
+	pid = -2;
+	exit(0);
+    }
+    if(argc > 1 && strncmp(argv[1], "-h", 2) == 0){
+        wait(NULL);
+        pid = -2;
+    }
+
     return true;
 }
 
@@ -209,6 +246,10 @@ static bool client_operation(int argc, char **argv){
 
 static bool quit_operation(int argc, char **argv){
     quit_flag = true;
+    /* inactivate server if it's running */
+    if(pid != -2){
+        kill(pid, SIGTERM);
+    }
     return true;
 }
 
