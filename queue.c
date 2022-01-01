@@ -5,9 +5,6 @@
 //#include "harness.h"
 #include "queue.h"
 
-#ifndef strlcpy
-#define strlcpy(dst, src, sz) snprintf((dst), (sz), "%s", (src))
-#endif
 /*
  * Create empty queue.
  * Return NULL if could not allocate space.
@@ -70,7 +67,8 @@ bool q_insert_head(queue_t *q, char *s)
         return false;
     }
     /* copy string  */
-    strlcpy(newh->value, s, length + 1);
+    strncpy(newh->value, s, length);
+    newh->value[length] = '\0';
     newh->next = NULL;
     /* What if either call to malloc returns NULL? */
     if (q->head) {
@@ -113,7 +111,8 @@ bool q_insert_tail(queue_t *q, char *s)
         return false;
     }
     /* copy string */
-    strlcpy(newt->value, s, length + 1);
+    strncpy(newt->value, s, length);
+    newt->value[length] = '\0';
     newt->next = NULL;
     /* Remember: It should operate in O(1) time */
     /* TODO: Remove the above comment when you are about to implement. */
@@ -149,7 +148,8 @@ bool q_remove_head(queue_t *q, char *sp, size_t bufsize)
         return false;
     }
     if (sp != NULL) {
-        strlcpy(sp, q->head->value, bufsize);
+        strncpy(sp, q->head->value, bufsize - 2);
+	sp[bufsize - 1] = '\0';
     }
     list_ele_t *temp = q->head;
     q->head = q->head->next;
