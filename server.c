@@ -16,6 +16,7 @@
 #include "mem_manage.h"
 #include "rio.h"
 #include "server.h"
+#include "messages.h"
 
 static void print_help(){
     printf("\tCommand\t\tDescription\n");
@@ -203,10 +204,7 @@ void handle_directory_request(int out_fd, int dir_fd, char *filename)
         format_size(size, &statbuf);
         if (S_ISREG(statbuf.st_mode) || S_ISDIR(statbuf.st_mode)) {
             char *d = S_ISDIR(statbuf.st_mode) ? "/" : "";
-            sprintf(buf,
-                    "<tr><td><a "
-                    "href=\"%s%s\">%s%s</a></td><td>%s</td><td>%s</td></tr>\n",
-                    dp->d_name, d, dp->d_name, d, m_time, size);
+            sprintf(buf, "<tr><td><a href=\"%s%s\">%s%s</a></td><td>%s</td><td>%s</td></tr>\n", dp->d_name, d, dp->d_name, d, m_time, size);
             writen(out_fd, buf, strlen(buf));
         }
         close(ffd);
@@ -276,8 +274,7 @@ bool server(int argc, char **argv){
                 }
 		if(dir_max_len != 256){
 	            char *new_dir = realloc(dir, dir_max_len);
-	            if(new_dir == NULL){
-                        printf("memory alloction failed\n");
+		    if(!mem_alloc_succ(new_dir)){
 	    	        return false;
 		    }
 	            dir = new_dir;
@@ -293,14 +290,14 @@ bool server(int argc, char **argv){
 	    case 'p':
 		port = atoi(optarg);
 		if(port < 0 || port > 65535){
-                    printf("range of port is 0~65535\n");
+		    show_message("range of port is 0~65535\n");
 	            exit(0);
 		}else if(port == 0 && optarg[0] != '0'){
-                    printf("%s is not in the range 0~65535\n", optarg);
+		    show_message("%s is not in the range 0~65535\n", optarg);
 		}
 		break;
 	    default:
-		printf("unknown option:%c", c);
+		show_message("unknown option:%c", c);
 		break;
 	}
     }

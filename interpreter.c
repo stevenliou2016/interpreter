@@ -8,6 +8,7 @@
 #include "command_line.h"
 #include "console.h"
 #include "mem_manage.h"
+#include "messages.h"
 
 void usage(char *name){
     printf("Usage: %s [options] [args]\n", name);
@@ -20,9 +21,9 @@ void usage(char *name){
 
 int main(int argc, char **argv){
     char *input_file = NULL;
-    char *log_file = NULL;
+    char *l_file = NULL; // log file
     size_t len = 0;
-    bool is_visible = false;
+    bool is_v = false; // the messages are visible if it's true
     char c = '\0';
     time_t seconds = 0;
     struct tm *today;
@@ -42,17 +43,17 @@ int main(int argc, char **argv){
                 input_file[len] = '\0';
 		break;
             case 'v':
-                is_visible = true;
+                is_v = true;
                 break;
 	    case 'l':
-		log_file = malloc(20);
-                if(!mem_alloc_succ(log_file)){
+		l_file = malloc(20);
+                if(!mem_alloc_succ(l_file)){
                     exit(-1);
                 }
-		memset(log_file, 0, 20);
+		memset(l_file, 0, 20);
 		time(&seconds);
 		today = localtime(&seconds);
-		sprintf(log_file, "log%04d-%02d-%02d", today->tm_year + 1900, today->tm_mon + 1, today->tm_mday);
+		sprintf(l_file, "log%04d-%02d-%02d", today->tm_year + 1900, today->tm_mon + 1, today->tm_mday);
 		break;
             default:
                 printf("Unknown option %c\n", c);
@@ -61,7 +62,8 @@ int main(int argc, char **argv){
 	}
     }
     console_init();
-    if(!run_console(input_file, log_file, is_visible)){
+    message_init(is_v, l_file);
+    if(!run_console(input_file, l_file, is_v)){
         return -1;
     }
     return 0; 
