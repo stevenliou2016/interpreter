@@ -16,6 +16,7 @@
 #include "queue.h"
 #include "client/client.h"
 #include "server.h"
+#include "messages.h"
 
 static cmd_ptr cmd_list = NULL;
 static bool help_operation(int, char **);
@@ -34,8 +35,6 @@ static bool quit_operation(int, char **);
 queue_t *q = NULL;
 bool quit_flag = false;
 pid_t pid = -2; // Id of server process
-bool is_visible = false; // Commands are visible if it's true
-char *log_file = NULL;
 
 void console_init(){
     cmd_list = NULL;
@@ -63,7 +62,7 @@ void trim_newline(char *s){
         *s = '\0';
 }
 
-bool do_log(const char *format, va_list vlist){
+/*bool do_log(const char *format, va_list vlist){
     FILE *fp;
 
     if(!(fp = fopen(log_file, "a"))){
@@ -77,9 +76,9 @@ bool do_log(const char *format, va_list vlist){
     }
 
     return true;
-}
+}*/
 
-void show_message(const char *format, ...){
+/*void show_message(const char *format, ...){
     va_list vlist;
     FILE *fp;
 
@@ -91,7 +90,7 @@ void show_message(const char *format, ...){
         do_log(format, vlist);
     }
     va_end(vlist);
-}
+}*/
 
 char **parse_cmd(int *argc, char *cmd){
     if(!cmd)

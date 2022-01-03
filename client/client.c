@@ -370,26 +370,30 @@ bool client(int argc, char **argv)
     int ch = 'h';
     unsigned int max_size = 256;
 
-    char *file_name = calloc(max_size, sizeof(char));
+    char *file_name = malloc(max_size);
     if (!mem_alloc_succ(file_name)) {
         return false;
     }
+    memset(file_name, 0, max_size);
 
-    char *dir_name = calloc(max_size, sizeof(char));
+    char *dir_name = malloc(max_size);
     if (!mem_alloc_succ(dir_name)) {
         return false;
     }
+    memset(dir_name, 0, max_size);
 
-    char *server_ip = calloc(16, sizeof(char));
+    char *server_ip = malloc(16);
     if (!mem_alloc_succ(server_ip)) {
         return false;
     }
+    memset(server_ip, 0, 16);
     strncpy(server_ip, "140.118.155.192", 16);
 
-    char *port = calloc(6, sizeof(char));
+    char *port = malloc(6);
     if (!mem_alloc_succ(port)) {
         return false;
     }
+    memset(port, 0, 6);
     strncpy(port, "9999", 5);
 
     while ((ch = getopt(argc, argv, "hf:c:p:d:")) != -1) {
