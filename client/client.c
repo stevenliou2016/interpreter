@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include "../mem_manage.h"
 #include "../rio.h"
+#include "../messages.h"
 
 typedef struct {
     char **ele;
@@ -67,18 +68,17 @@ static int connect_to_server(const char *ip, const char *port)
      */
     int res = inet_pton(AF_INET, ip, &server_addr.sin_addr);
     if (res < 0) {
-        printf("error: first parameter is not a valid address family\n");
+	show_message("error: first parameter is not a valid address family\n");
         close(fd);
         return -1;
     } else if (res == 0) {
-        printf(
-            "char string (second parameter does not contain valid ipaddress\n");
+	show_message("second parameter does not contain a valid ip address\n");
         close(fd);
         return -1;
     }
     if (connect(fd, (const struct sockaddr *) &server_addr,
                 sizeof(struct sockaddr_in)) == -1) {
-        printf("connect failed\n");
+	show_message("connection failed\n");
         close(fd);
         return -1;
     }
@@ -90,7 +90,7 @@ static void get_file(const char *file_name, int fd)
     char *buf = calloc(20 + strlen(file_name), sizeof(char));
 
     if (!mem_alloc_succ(buf)) {
-        printf("send request failed\n");
+	show_message("sending request failed\n");
     }
 
     sprintf(buf, "GET %s HTTP/1.1\r\n\r\n", file_name);
@@ -105,7 +105,7 @@ static void get_dir(char *dir_name, int fd)
     char *p = dir_name;
 
     if (!mem_alloc_succ(buf)) {
-        printf("send request failed\n");
+	show_message("send request failed\n");
     }
 
     while (*p != '\0') {
@@ -139,7 +139,7 @@ static bool download_file(const char *file_name, char *ip, char *port)
     rio_read_init(&rio, fd);
     p_file = fopen(file_name, "w");
     if (p_file == NULL) {
-        printf("open failure\n");
+	show_message("opening file failed\n");
         return false;
     }
     while (n > 0) {
@@ -168,7 +168,7 @@ static bool build_dir(const char *dir_name)
 {
     if (access(dir_name, F_OK) != 0) {
         if (mkdir(dir_name, S_IRWXU) == -1) {
-            printf("make a directory failed\n");
+	    show_message("makeing a directory failed\n");
             return false;
         }
     }
@@ -255,12 +255,12 @@ static data_array *make_data_array()
 {
     data_array *temp = malloc(sizeof(data_array));
     if (temp == NULL) {
-        printf("malloc failed\n");
+	show_message("memory allocation failed\n");
         return NULL;
     }
     temp->ele = calloc(buf_max_size, sizeof(char *));
     if (temp->ele == NULL) {
-        printf("malloc failed\n");
+	show_message("memory allocation failed\n");
         return NULL;
     }
     temp->idx = 0;
@@ -387,7 +387,7 @@ bool client(int argc, char **argv)
         return false;
     }
     memset(server_ip, 0, 16);
-    strncpy(server_ip, "140.118.155.192", 16);
+    strncpy(server_ip, "140.118.155.192", 15);
 
     char *port = malloc(6);
     if (!mem_alloc_succ(port)) {
@@ -414,14 +414,14 @@ bool client(int argc, char **argv)
             break;
         case 'c':
             if (strlen(argv[optind - 1]) > 15) {
-                printf("It is not a valid IPv4 address\n");
+	        show_message("It is not a valid IPv4 address\n");
             }
             memcpy(server_ip, argv[optind - 1], strlen(argv[optind - 1]));
             server_ip[strlen(argv[optind - 1])] = '\0';
             break;
         case 'p':
             if (atoi(argv[optind - 1]) > 65353 || atoi(argv[optind - 1]) < 0) {
-                printf("It is not a valid port\n");
+	        show_message("It is not a valid port\n");
                 return false;
             }
             memcpy(port, argv[optind - 1], strlen(argv[optind - 1]));
@@ -439,24 +439,26 @@ bool client(int argc, char **argv)
             memcpy(dir_name, argv[optind - 1], strlen(argv[optind - 1]));
             break;
         default:
-            printf("Unknown option\n");
+	    show_message("Unknown option %c\n", ch);
             break;
         }
     }
 
     if (file_name[0] != '\0') {
         if (!download_file(file_name, server_ip, port)) {
-            printf("download %s failed\n", file_name);
+	    show_message("download %s failed\n", file_name);
             return false;
-        } else
-            printf("download %s sucessfully\n", file_name);
+        } else{
+	    show_message("download %s sucessfully\n", file_name);
+	}
     }
     if (dir_name[0] != '\0') {
         if (!download_dir(dir_name, server_ip, port)) {
-            printf("download directory %s failed\n", dir_name);
+	    show_message("download directory %s failed\n", dir_name);
             return false;
-        } else
-            printf("download directory %s sucessfully\n", dir_name);
+        } else{
+	    show_message("download directory %s sucessfully\n", dir_name);
+	}
     }
     free(file_name);
     free(dir_name);
