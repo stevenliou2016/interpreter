@@ -7,6 +7,9 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <time.h>
+#include <errno.h>
+#include <ctype.h>
+#include <stdarg.h>
 #include "console.h"
 #include "mem_manage.h"
 #include "command_line.h"
@@ -30,7 +33,9 @@ static bool client_operation(int, char **);
 static bool quit_operation(int, char **);
 queue_t *q = NULL;
 bool quit_flag = false;
-pid_t pid = -2; // id of server process
+pid_t pid = -2; // Id of server process
+bool is_visible = false; // Commands are visible if it's true
+char *log_file = NULL;
 
 void console_init(){
     cmd_list = NULL;
@@ -50,23 +55,67 @@ void console_init(){
     add_cmd("quit", "\t#Exit program", quit_operation);
 }
 
+void trim_newline(char *s){
+    while(s && *s != '\n' && *s != '\0'){
+        s++;
+    }
+    if(s)
+        *s = '\0';
+}
+
+bool do_log(const char *format, va_list vlist){
+    FILE *fp;
+
+    if(!(fp = fopen(log_file, "a"))){
+	printf("open file %s failed\n", log_file);
+
+        return false;
+    }
+    vfprintf(fp, format, vlist);
+    if(fp){
+        fclose(fp);
+    }
+
+    return true;
+}
+
+void show_message(const char *format, ...){
+    va_list vlist;
+    FILE *fp;
+
+    va_start(vlist, format);
+    if(is_visible){
+        vprintf(format, vlist);
+    }
+    if(log_file){
+        do_log(format, vlist);
+    }
+    va_end(vlist);
+}
+
 char **parse_cmd(int *argc, char *cmd){
     if(!cmd)
         return NULL;
     size_t n_args = 10;
     size_t string_size = 256;
-    const char delim = ' ';
+    const char delim[] = " ";
     char **argv = calloc(n_args, sizeof(char *));
     if(argv == NULL){
-        printf("malloc failed\n");
+        show_message("memory allocation failed\n");
         return NULL;
     }
     char **argv_p = argv;
-    *argv_p = strtok(cmd, &delim);
+    *argv_p = strtok(cmd, delim);
+    if(strncmp("server", cmd, 6) != 0 && strncmp("client", cmd, 6) != 0){
+        trim_newline(*argv_p);
+    }
     (*argc)++;
 
     while(*argv_p++){
-        *argv_p = strtok(NULL, &delim);
+        *argv_p = strtok(NULL, delim);
+        if(strncmp("server", cmd, 6) != 0 && strncmp("client", cmd, 6) != 0){
+            trim_newline(*argv_p);
+        }
 	if(*argv_p){
             (*argc)++;
 
@@ -77,7 +126,7 @@ char **parse_cmd(int *argc, char *cmd){
 
 static bool q_is_NULL(){
    if(!q){
-       printf("the queue is NULL\n");
+       show_message("the queue is NULL\n");
        return true;
    }
    return false;
@@ -97,18 +146,27 @@ static bool help_operation(int argc, char **argv){
 }
 
 static bool q_show_operation(int argc, char **argv){
+    if(q_is_NULL()){
+        return false;
+    }
     list_ele_t *head = q->head;
-    if(head){
-        printf("q = [%s", head->value);
-        head = head->next;
-    }else{
-        printf("q = [");
+    if(is_visible || log_file){
+        if(head){
+            //printf("q = [%s", head->value);
+	    show_message("q = [%s", head->value);
+            head = head->next;
+        }else{
+            //printf("q = [");
+	    show_message("q = [");
+        }
+        while(head){
+            //printf(", %s", head->value);
+	    show_message(", %s", head->value);
+            head = head->next;
+        }
+        //printf("]\n");
+	show_message("]\n");
     }
-    while(head){
-        printf(", %s", head->value);
-	head = head->next;
-    }
-    printf("]\n");
 
     return true;
 }
@@ -130,7 +188,8 @@ static bool q_free_operation(int argc, char **argv){
         return false;
     }
     q_free(q);
-    printf("the queue is freed\n");
+    q = NULL;
+    show_message("the queue is freed\n");
     return true;
 }
 
@@ -164,7 +223,7 @@ static bool q_insert_head_operation(int argc, char **argv){
     if(argc > 2){
         n = atoi(argv[2]);
         if(n < 1){
-            printf("n must be greater than 0\n");
+	    show_message("n must be greater than 0\n");
             return false;
         }
     }
@@ -180,7 +239,7 @@ static bool q_insert_head_operation(int argc, char **argv){
             s = random_string();
 	}
         if(!q_insert_head(q, s)){
-            printf("insert a string at the head of queue failed\n");
+	    show_message("insert a string at the head of queue failed\n");
 	    if(is_random){
 	        free(s);
 	    }
@@ -202,7 +261,7 @@ static bool q_insert_tail_operation(int argc, char **argv){
     if(argc > 2){
         n = atoi(argv[2]);
         if(n < 1){
-            printf("n must be greater than 0\n");
+	    show_message("n must be greater than 0\n");
             return false;
         }
     }
@@ -218,7 +277,7 @@ static bool q_insert_tail_operation(int argc, char **argv){
             s = random_string();
 	}
         if(!q_insert_tail(q, s)){
-            printf("insert a string at the tail of queue failed\n");
+	    show_message("insert a string at the tail of queue failed\n");
 	    if(is_random){
 	        free(s);
 	    }
@@ -237,6 +296,10 @@ static bool q_remove_head_operation(int argc, char **argv){
     if(q_is_NULL()){
         return false;
     }
+    if(!q->head){
+        q_show_operation(argc, argv);
+	return true;
+    }
     size_t len = strlen(q->head->value);
     char *head = malloc(len + 1);
     if(!mem_alloc_succ(head)){
@@ -244,7 +307,7 @@ static bool q_remove_head_operation(int argc, char **argv){
     }
     memset(head, 0, len + 1);
     if(!q_remove_head(q, head, len + 1)){
-        printf("remove the first element failed\n");
+	show_message("remove the first element failed\n");
 	return false;
     }
     q_show_operation(argc, argv);
@@ -256,7 +319,7 @@ static bool q_size_operation(int argc, char **argv){
     if(q_is_NULL()){
         return false;
     }
-    printf("the size of queue is %d\n", q_size(q));
+    show_message("the size of queue is %d\n", q_size(q));
     return true;
 }
 
@@ -287,18 +350,23 @@ static void sig_cld(){
 
 static bool server_operation(int argc, char **argv){
     if(argc > 1 && strncmp(argv[1], "-s", 2) == 0 && pid != -2){
-        kill(pid, SIGTERM);
-	pid = -2;
-	return true;
+        if(pid != -2){
+            kill(pid, SIGTERM);
+	    pid = -2;
+	    return true;
+	}else{
+            show_message("there is no server running\n");
+	    return false;
+	}
     }
     if(pid > 0){
-        printf("server is running\n");
+	show_message("the server is running\n");
 	return true;
     }
     signal(SIGCLD, sig_cld);
     pid = fork();
     if(pid == -1){ 
-	printf("fork failed\n");
+	show_message("fork failed\n");
 	return false;
     }else if(pid == 0){ // child
         if(!server(argc, argv)){
@@ -375,31 +443,84 @@ bool add_cmd(char *cmd, char *doc, cmd_func op){
     return true;
 }
 
-bool run_console(){
+bool run_console(char *input_file, char *l_file, bool is_v){
+    FILE *fp, *lfp;
+    char *cmd = NULL;
+    size_t len = 0;
+    ssize_t nread = 0;
+    is_visible = is_v;
+    log_file = l_file;
+
+    if(log_file){
+        is_visible = false;
+	show_message("=====start running =====\n");
+	is_visible = is_v;
+    }
+    // check if file exists
+    if(input_file && access(input_file, F_OK) == -1){
+	show_message("%s does not exist\n", input_file);
+
+        return false;
+    }
+    if(input_file){
+        if(!(fp = fopen(input_file, "r"))){
+            show_message("open file %s failed\n", input_file);
+
+            return false;
+	}
+    }
     while(!quit_flag){
-        char *cmd = cmd_line();
+        cmd = NULL;
+	if(input_file){
+            if((nread = getline(&cmd, &len, fp)) == -1){
+                if(errno != 0 && cmd){
+		    free(cmd);
+		    exit(-1);
+		}else{
+                    exit(0);
+		}
+	    }else{
+                char *p = cmd;
+		while(isspace(*p)){
+                    p++;
+		}
+		if(*p == '#'){
+                    printf("%s", cmd);
+		    continue;
+		}
+	    }
+	}else{
+	    cmd = cmd_line();
+	}
 	if(cmd == NULL)
             continue;
+        if(input_file){
+	    show_message("%s", cmd);
+	}
+        else{
+	    show_message("%s\n", cmd);
+	}
+            
         int arg_cnt = 0;
         char **arg_val = parse_cmd(&arg_cnt, cmd);
-        size_t cmd_name_len = strlen(*arg_val);
-        char *cmd_name = malloc(cmd_name_len + 1);
-        if(!mem_alloc_succ(cmd_name)){
-            return false;
-        }
-        memset(cmd_name, 0, cmd_name_len + 1);
-        strncpy(cmd_name, *arg_val, cmd_name_len);
         cmd_ptr clist = cmd_list;
-        while(clist && strcmp(cmd_name, clist->cmd) != 0){
+        while(clist && strncmp(cmd, clist->cmd, strlen(cmd)) != 0){
             clist = clist->next;
         }
 	if(clist){
-            clist->op(arg_cnt, arg_val);
+            bool ret = clist->op(arg_cnt, arg_val);
+	    if(input_file && cmd == "")
+                return ret;
 	}else{
-            printf("unknown command:%s\n", cmd_name);
+	    show_message("unknown command:%s\n", *arg_val);
 	    fflush(stdout);
+	    if(input_file)
+                return false;
 	}
         free(cmd);
+    }
+    if(input_file){
+        fclose(fp);
     }
     return true;
 }

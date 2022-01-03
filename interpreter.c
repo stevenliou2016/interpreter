@@ -4,6 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <time.h>
 #include "command_line.h"
 #include "console.h"
 #include "mem_manage.h"
@@ -18,34 +19,49 @@ void usage(char *name){
 }
 
 int main(int argc, char **argv){
-    unsigned int file_size = 256;
-    char *input_file = calloc(file_size, sizeof(char));
-    char *log_file = calloc(file_size, sizeof(char));
+    char *input_file = NULL;
+    char *log_file = NULL;
+    size_t len = 0;
     bool is_visible = false;
     char c = '\0';
+    time_t seconds = 0;
+    struct tm *today;
 
-    while((c = getopt(argc, argv, "hf:vl:")) != -1){
+    while((c = getopt(argc, argv, "hf:vl")) != -1){
         switch(c){
             case 'h':
                 usage(argv[0]);
-		break;
+		exit(0);
 	    case 'f':
-                strncpy(input_file, optarg, file_size);
+		len = strlen(optarg);
+		input_file = malloc(len + 1);
+		if(!mem_alloc_succ(input_file)){
+                    exit(-1);
+		}
+                strncpy(input_file, optarg, len);
+                input_file[len] = '\0';
 		break;
             case 'v':
                 is_visible = true;
                 break;
 	    case 'l':
-                strncpy(log_file, optarg, file_size);
+		log_file = malloc(20);
+                if(!mem_alloc_succ(log_file)){
+                    exit(-1);
+                }
+		memset(log_file, 0, 20);
+		time(&seconds);
+		today = localtime(&seconds);
+		sprintf(log_file, "log%04d-%02d-%02d", today->tm_year + 1900, today->tm_mon + 1, today->tm_mday);
 		break;
             default:
-                printf("Unknown option %c \n", c);
+                printf("Unknown option %c\n", c);
 		usage(argv[0]);
-		break;
+		exit(0);
 	}
     }
     console_init();
-    if(!run_console()){
+    if(!run_console(input_file, log_file, is_visible)){
         return -1;
     }
     return 0; 

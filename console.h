@@ -12,6 +12,6 @@ typedef struct cmd_ele{
 
 void console_init();
 bool add_cmd(char *, char *, cmd_func);
-bool run_console();
+bool run_console(char *, char *, bool);
 
 #endif
