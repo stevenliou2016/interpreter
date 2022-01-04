@@ -65,36 +65,6 @@ void trim_newline(char *s){
         *s = '\0';
 }
 
-/*bool do_log(const char *format, va_list vlist){
-    FILE *fp;
-
-    if(!(fp = fopen(log_file, "a"))){
-	printf("open file %s failed\n", log_file);
-
-        return false;
-    }
-    vfprintf(fp, format, vlist);
-    if(fp){
-        fclose(fp);
-    }
-
-    return true;
-}*/
-
-/*void show_message(const char *format, ...){
-    va_list vlist;
-    FILE *fp;
-
-    va_start(vlist, format);
-    if(is_visible){
-        vprintf(format, vlist);
-    }
-    if(log_file){
-        do_log(format, vlist);
-    }
-    va_end(vlist);
-}*/
-
 char **parse_cmd(int *argc, char *cmd){
     if(!cmd)
         return NULL;
@@ -154,19 +124,15 @@ static bool q_show_operation(int argc, char **argv){
     list_ele_t *head = q->head;
     if(is_visible || log_file){
         if(head){
-            //printf("q = [%s", head->value);
 	    show_message("q = [%s", head->value);
             head = head->next;
         }else{
-            //printf("q = [");
 	    show_message("q = [");
         }
         while(head){
-            //printf(", %s", head->value);
 	    show_message(", %s", head->value);
             head = head->next;
         }
-        //printf("]\n");
 	show_message("]\n");
     }
 
