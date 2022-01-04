@@ -10,6 +10,20 @@ typedef struct cmd_ele{
     struct cmd_ele *next;
 }cmd_ele, *cmd_ptr;
 
+typedef struct cmd_line_state{
+    char *buf;
+    char *prompt;
+    size_t len;
+    size_t pos;
+    size_t col;
+    int history_idx;
+}cmd_line_state;
+
+typedef struct abuf {
+    char *b;
+    int len;
+}abuf;
+
 void console_init();
 bool add_cmd(char *, char *, cmd_func);
 bool run_console(char *, char *, bool);

@@ -18,6 +18,11 @@
 #include "server.h"
 #include "messages.h"
 
+queue_t *q = NULL;
+bool quit_flag = false;
+pid_t pid = -2; // Id of server process
+const char history_file_name[] = ".history_cmd";
+
 static cmd_ptr cmd_list = NULL;
 static bool help_operation(int, char **);
 static bool q_new_operation(int, char **);
@@ -32,9 +37,6 @@ static bool q_show_operation(int, char **);
 static bool server_operation(int, char **);
 static bool client_operation(int, char **);
 static bool quit_operation(int, char **);
-queue_t *q = NULL;
-bool quit_flag = false;
-pid_t pid = -2; // Id of server process
 
 void console_init(){
     cmd_list = NULL;
@@ -52,6 +54,7 @@ void console_init(){
     add_cmd("server", "\t#Activate server", server_operation);
     add_cmd("client", "\t#Activate client", client_operation);
     add_cmd("quit", "\t#Exit program", quit_operation);
+    load_history(history_file_name);
 }
 
 void trim_newline(char *s){
@@ -498,6 +501,8 @@ bool run_console(char *input_file, char *l_file, bool is_v){
 	}
         else{
 	    show_message("%s\n", cmd);
+            add_history_cmd(cmd);
+            save_history_cmd(history_file_name);
 	}
             
         int arg_cnt = 0;
@@ -518,6 +523,7 @@ bool run_console(char *input_file, char *l_file, bool is_v){
 	}
         free(cmd);
     }
+    free_history();
     if(input_file){
         fclose(fp);
     }

@@ -8,10 +8,10 @@
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include "command_line.h"
 #include "mem_manage.h"
+#include "console.h"
 
-unsigned int max_line = 4096;
+size_t max_line = 4096;
 static int history_max_len = 200;
 static int history_len = 0;
 static char **history = NULL;
@@ -26,23 +26,14 @@ enum action{
     BACKSPACE = 127
 };
 
-typedef struct cmd_line_state{
-    char *buf;
-    char *prompt;
-    size_t len;
-    size_t pos;
-    size_t col;
-}cmd_line_state;
+enum direction{
+    DOWN = 0,
+    UP = 1
+};
 
-typedef struct abuf {
-    char *b;
-    int len;
-}abuf;
+bool add_history_cmd(const char *);
+void history_cmd(cmd_line_state *, int);
 
-static void cmd_line_beep(){
-    fprintf(stderr, "\x7");
-    fflush(stderr);
-}
 
 static void abInit(struct abuf *ab)
 {
@@ -59,6 +50,11 @@ static void abAppend(struct abuf *ab, const char *s, int len)
     memcpy(new + ab->len, s, len);
     ab->b = new;
     ab->len += len;
+}
+
+static void cmd_line_beep(){
+    fprintf(stderr, "\x7");
+    fflush(stderr);
 }
 
 static char *cmd_line_noTTY(){
@@ -186,7 +182,6 @@ static int cmd_line_ins(cmd_line_state *cls, char c){
 	}
 	refresh(cls);
     }
-
 }
 
 
@@ -254,6 +249,7 @@ int cmd_line_edit(char* buf, char* prompt, size_t len){
     cls.len = 0;
     cls.pos = 0;
     cls.col = get_columns();
+    cls.history_idx = 0;
 
     write(STDOUT_FILENO, cls.prompt, 5);
     while(true){
@@ -300,9 +296,11 @@ int cmd_line_edit(char* buf, char* prompt, size_t len){
 		        switch (seq[1]) {
 			    case 'A': /* Up */
                                 //linenoiseEditHistoryNext(&l, LINENOISE_HISTORY_PREV);
+				history_cmd(&cls, UP);
                                 break;
                             case 'B': /* Down */
                                 //linenoiseEditHistoryNext(&l, LINENOISE_HISTORY_NEXT);
+				history_cmd(&cls, DOWN);
                                 break;
                             case 'C': /* Right */
                                 cmd_line_move_right(&cls);
@@ -350,11 +348,17 @@ static int cmd_line_raw(char *buf, char *prompt){
     printf("\n");
     return n;
 }
-
+/* On success, return command
+ * On error, return NULL
+ * buf is freed by caller
+ */
 char *cmd_line(){
     char *prompt = "cmd> ";
-    char *buf = calloc(max_line, sizeof(char));
-    mem_alloc_succ(buf);
+    char *buf = malloc(max_line);
+    if(!mem_alloc_succ(buf)){
+        return NULL;
+    }
+    memset(buf, 0, max_line);
 
     if(!isatty(STDIN_FILENO)){
 	return cmd_line_noTTY();
@@ -367,38 +371,34 @@ char *cmd_line(){
     return buf;
 }
 
-int add_history_cmd(const char *cmd)
-{
-    char *cmd_copy;
-
-    if (history_max_len == 0)
-        return 0;
-
-    /* Initialization on first call. */
-    if (history == NULL) {
+bool add_history_cmd(const char *cmd){
+    if(!history){
         history = malloc(sizeof(char *) * history_max_len);
-        if (history == NULL)
-            return 0;
-        memset(history, 0, (sizeof(char *) * history_max_len));
+	if(!mem_alloc_succ(history)){
+            return false;
+	}
     }
-    /* Don't add duplicated lines. */
-    if (history_len && !strcmp(history[history_len - 1], cmd))
-        return 0;
-
-    /* Add an heap allocated copy of the line in the history.
-     * If we reached the max length, remove the older line. */
-    cmd_copy = strdup(cmd);
-
-    if (!cmd_copy)
-        return 0;
-    if (history_len == history_max_len) {
+    size_t len = strlen(cmd);
+    // Do not add duplicated cmd
+    if(history_len > 0 && strncmp(history[history_len - 1], cmd, len) == 0){
+        return false;
+    }
+    if(!history[history_len]){
+        history[history_len] = malloc(len + 1);
+        if(!mem_alloc_succ(history[history_len])){
+            return false;
+        }
+        memset(history[history_len], 0, len + 1);
+    }
+    if(history_len == history_max_len){
         free(history[0]);
-        memmove(history, history + 1, sizeof(char *) * (history_max_len - 1));
+        memmove(history, history + 1, history_max_len - 1);
         history_len--;
     }
-    history[history_len] = cmd_copy;
-    history_len++;
-    return 1;
+    strncpy(history[history_len], cmd, len);
+    history[history_len][len] = '\0';
+    history_len++;    
+    return true;
 }
 
 int save_history_cmd(const char *file_name)
@@ -418,7 +418,7 @@ int save_history_cmd(const char *file_name)
     return 0;
 }
 
-static void free_History()
+void free_history()
 {
     if (history) {
         for (int i = 0; i < history_len; i++)
@@ -447,4 +447,41 @@ int load_history(const char *file_name)
     }
     fclose(fp);
     return 0;
+}
+
+/* replace current command with next command if d = 0
+ * replace current command with previous command if d = 1
+ */
+void history_cmd(cmd_line_state *cls, int d){
+    if(history_len > 0){
+        if(d == 0){
+            cls->history_idx--;
+            if(cls->history_idx == 0){
+		strcpy(cls->buf, "");
+		cls->len = cls->pos = 0;
+	        refresh(cls);
+		return;
+            }else if(cls->history_idx < 0){
+                cls->history_idx = 0;
+                cmd_line_beep();
+		return;
+	    }
+        }else if(d == 1){
+            cls->history_idx++;
+            if(cls->history_idx >= history_len){
+                cmd_line_beep();
+                cls->history_idx = history_len - 1;
+		return;
+            }
+        }else{
+            return;
+        }
+        size_t len = strlen(history[history_len - cls->history_idx]);
+	strncpy(cls->buf, history[history_len - cls->history_idx], len);
+	cls->buf[len] = '\0';
+	cls->len = cls->pos = len;
+	refresh(cls);
+    }else{
+        cmd_line_beep();
+    }
 }
