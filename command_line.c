@@ -8,13 +8,17 @@
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <ctype.h>
 #include "mem_manage.h"
 #include "console.h"
+#include "command_line.h"
 
 size_t max_line = 4096;
 static int history_max_len = 200;
 static int history_len = 0;
 static char **history = NULL;
+cmd_ptr cmd_list = NULL;
+cmd_ptr clist = NULL;
 
 enum action{
     CTRL_B = 2,
@@ -31,9 +35,12 @@ enum direction{
     UP = 1
 };
 
-bool add_history_cmd(const char *);
 void history_cmd(cmd_line_state *, int);
 
+void cmd_line_init(cmd_ptr cl){
+    cmd_list = cl;
+    clist = cmd_list;
+}
 
 static void abInit(struct abuf *ab)
 {
@@ -189,6 +196,8 @@ void cmd_line_move_left(cmd_line_state *cls){
     if(cls->pos > 0){
         cls->pos--;
 	refresh(cls);
+    }else{
+        cmd_line_beep();
     }
 }
 
@@ -196,12 +205,15 @@ void cmd_line_move_right(cmd_line_state *cls){
     if(cls->pos < cls->len){
         cls->pos++;
 	refresh(cls);
+    }else{
+        cmd_line_beep();
     }
 }
 
 void cmd_line_backspace(cmd_line_state *cls){
     if(cls->pos > 0){
         memmove(cls->buf + cls->pos - 1, cls->buf + cls->pos, cls->len - cls->pos);
+	cls->buf[cls->len - 1] = '\0';
         cls->pos--;
 	cls->len--;
 	refresh(cls);
@@ -236,13 +248,14 @@ void cmd_line_move_end(cmd_line_state *cls){
     }
 }
 
+
 // On success, return length of the current buffer
 // On error, return -1
 int cmd_line_edit(char* buf, char* prompt, size_t len){
     char c = '\0';
-    int n = 0;
     cmd_line_state cls;
     char seq[3];
+    size_t complete_line_len = 0;
 
     cls.buf = buf;
     cls.prompt = prompt;
@@ -250,10 +263,11 @@ int cmd_line_edit(char* buf, char* prompt, size_t len){
     cls.pos = 0;
     cls.col = get_columns();
     cls.history_idx = 0;
+    cls.completion_idx = 0;
 
     write(STDOUT_FILENO, cls.prompt, 5);
     while(true){
-        n = read(STDIN_FILENO, &c, 1);
+        read(STDIN_FILENO, &c, 1);
 
         switch(c){
             case CTRL_B:
@@ -269,9 +283,11 @@ int cmd_line_edit(char* buf, char* prompt, size_t len){
 		cmd_line_backspace(&cls);
 		break;
             case TAB:
-		printf("TAB\n");
-		return 1;
-		break;
+                complete_line_len = complete_cmd_line(&cls);
+		if(complete_line_len != -2){
+                    return complete_line_len;
+		}
+                break;
             case ENTER:
 		return (int)cls.len;
             case ESC:
@@ -295,11 +311,9 @@ int cmd_line_edit(char* buf, char* prompt, size_t len){
                     }else {
 		        switch (seq[1]) {
 			    case 'A': /* Up */
-                                //linenoiseEditHistoryNext(&l, LINENOISE_HISTORY_PREV);
 				history_cmd(&cls, UP);
                                 break;
                             case 'B': /* Down */
-                                //linenoiseEditHistoryNext(&l, LINENOISE_HISTORY_NEXT);
 				history_cmd(&cls, DOWN);
                                 break;
                             case 'C': /* Right */
@@ -470,6 +484,7 @@ void history_cmd(cmd_line_state *cls, int d){
             cls->history_idx++;
             if(cls->history_idx >= history_len){
                 cmd_line_beep();
+		cls->len = cls->pos = 0;
                 cls->history_idx = history_len - 1;
 		return;
             }
@@ -484,4 +499,123 @@ void history_cmd(cmd_line_state *cls, int d){
     }else{
         cmd_line_beep();
     }
+}
+
+int complete_cmd_line(cmd_line_state *cls){
+    size_t cmd_len = 0;
+    cmd_line_state temp_cls = *cls;
+    char c = '\0';
+    char seq[3];
+
+    while(isalpha(cls->buf[0]) && clist){
+	cmd_len = strlen(clist->cmd);
+	// compare original command with command list
+        if(cls->len <= cmd_len && strncmp(cls->buf, clist->cmd, cls->len) == 0){
+            strncpy(temp_cls.buf, clist->cmd, cmd_len);
+	    temp_cls.buf[cmd_len] = '\0';
+	    temp_cls.len = temp_cls.pos = cmd_len;
+	    refresh(&temp_cls);
+            
+	    while(true){
+                bool press_tab = false;
+                read(STDIN_FILENO, &c, 1);
+
+                switch(c){
+                    case CTRL_B:
+                        cmd_line_move_left(&temp_cls);
+			break;
+                    case CTRL_C:
+	        	errno = EAGAIN;
+                        return -1;
+                    case CTRL_F:
+                        cmd_line_move_right(&temp_cls);
+			break;
+                    case BACKSPACE:
+	                cmd_line_backspace(&temp_cls);
+			strncpy(cls->buf, temp_cls.buf, temp_cls.len);
+                        cls->buf[temp_cls.len] = '\0';
+                        cls->len = cls->pos = temp_cls.len;
+	                clist = cmd_list;
+			break;
+                    case TAB:
+			press_tab = true;
+			break;
+                    case ENTER:
+                        strncpy(cls->buf, temp_cls.buf, temp_cls.len);
+                        cls->buf[temp_cls.len] = '\0';
+                        cls->len = cls->pos = temp_cls.len;
+                        refresh(cls);
+	        	return (int)cls->len;
+                    case ESC:
+	        	if (read(STDIN_FILENO, seq, 1) == -1)
+                            break;
+                        if (read(STDIN_FILENO, seq + 1, 1) == -1)
+                            break;
+	        	/* ESC [ sequences. */
+                        if (seq[0] == '[') {
+                            if (seq[1] >= '0' && seq[1] <= '9') {
+                            /* Extended escape, read additional byte. */
+                                if (read(STDIN_FILENO, seq + 2, 1) == -1)
+                                    break;
+                                if (seq[2] == '~') {
+                                    switch (seq[1]) {
+                                        case '3': /* Delete key. */
+                                            cmd_line_del(&temp_cls);
+                                            break;
+                                    }
+                                }
+                            }else {
+	        	        switch (seq[1]) {
+	        		    case 'A': /* Up */
+	        			history_cmd(&temp_cls, UP);
+                                        break;
+                                    case 'B': /* Down */
+	        			history_cmd(&temp_cls, DOWN);
+                                        break;
+                                    case 'C': /* Right */
+                                        cmd_line_move_right(&temp_cls);
+                                        break;
+                                    case 'D': /* Left */
+                                        cmd_line_move_left(&temp_cls);
+                                        break;
+                                    case 'H': /* Home */
+                                        cmd_line_move_home(&temp_cls);
+                                        break;
+                                    case 'F': /* End*/
+                                        cmd_line_move_end(&temp_cls);
+                                        break;
+	        		}
+	        	    }
+	                }else if (seq[0] == 'O') {/* ESC O sequences. */
+                            switch (seq[1]) {
+                                case 'H': /* Home */
+                                    cmd_line_move_home(&temp_cls);
+                                    break;
+                                case 'F': /* End*/
+                                    cmd_line_move_end(&temp_cls);
+                                    break;
+                            }
+                        }else{
+                            refresh(cls);
+			    return -2;
+			}
+	        	break;
+	            default:
+	        	cmd_line_ins(&temp_cls, c);
+			strncpy(cls->buf, temp_cls.buf, temp_cls.len);
+                        cls->buf[temp_cls.len] = '\0';
+                        cls->len = cls->pos = temp_cls.len;
+	                clist = cmd_list;
+			break;
+	        }
+		if(c == TAB){
+                    break;
+		}
+	    }
+	}
+        clist = clist->next;
+    }
+    clist = cmd_list;
+    refresh(cls);
+    return -2;
 }
