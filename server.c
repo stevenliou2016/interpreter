@@ -1,21 +1,18 @@
+#include "server.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <sys/sendfile.h>
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <time.h>
 #include <dirent.h>
-#include <errno.h>
 #include "mem_manage.h"
 #include "rio.h"
-#include "server.h"
 #include "messages.h"
 
 static void print_help(){
@@ -32,7 +29,12 @@ int open_listen_fd(size_t port){
     int optval = 1;
     struct sockaddr_in serveraddr;
   
-    /* Create a socket */
+    /* Create an endpoint for communication 
+     * Domain:AF_INET stands for IPv4
+     * SOCK_STREAM provides  sequenced,  reliable, two-way, connection-based byte streams
+     * Choose a protocol automatically if third argument is 0
+     * On success, return a file descriptor
+     * On error, return -1 */
     if((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
         return -1;
     }
@@ -42,17 +44,21 @@ int open_listen_fd(size_t port){
         return -1;
     }
 
-    // 6 is TCP's protocol number
-    // enable this, much faster : 4000 req/s -> 17000 req/s
+    /* 6 is TCP's protocol number
+     * Enable this, much faster : 4000 req/s -> 17000 req/s */
     if (setsockopt(fd, 6, TCP_CORK, (const void *) &optval, sizeof(int)) <
         0) {
         return -1;
     }
 
     memset(&serveraddr, 0, sizeof(serveraddr));
-    serveraddr.sin_family = AF_INET;
-    serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    serveraddr.sin_port = htons(port);
+    serveraddr.sin_family = AF_INET; /* IPv4 */
+    /* Convert the unsigned integer host‐long from host byte order to network byte order
+     * INADDR_ANY:accept connection from every place */
+    serveraddr.sin_addr.s_addr = htonl(INADDR_ANY); 
+    /* Convert the unsigned short integer
+       hostshort from host byte order to network byte order */
+    serveraddr.sin_port = htons(port); 
     if (bind(fd, (struct sockaddr *) &serveraddr, sizeof(serveraddr)) < 0) {
         return -1;
     }
@@ -111,18 +117,19 @@ http_request *parse_request(int fd){
     rio_read_init(&rio, fd);
     rio_read_line(&rio, buf, MAXLINE);
     sscanf(buf, "%s %s", method, uri);
-    /* read all */
+    /* Read all */
     while (buf[0] != '\n' && buf[1] != '\n') { /* \n || \r\n */
         rio_read_line(&rio, buf, MAXLINE);
         if (buf[0] == 'R' && buf[1] == 'a' && buf[2] == 'n') {
             sscanf(buf, "Range: bytes=%lu-%lu", &req->offset, &req->end);
-            // Range: [start, end]
+            /* Range: [start, end] */
             if (req->end != 0) {
                 req->end++;
             }
         }
     }
     char *file_name = uri;
+    /* Get file name */
     if (uri[0] == '/') {
         file_name = uri + 1;
         int length = strlen(file_name);
@@ -143,6 +150,7 @@ http_request *parse_request(int fd){
     return req;
 }
 
+/* Reply to client for error request */
 void client_error(int fd, int status, char *msg, char *longmsg)
 {
     char buf[MAXLINE];
@@ -152,6 +160,7 @@ void client_error(int fd, int status, char *msg, char *longmsg)
     writen(fd, buf, strlen(buf));
 }
 
+/* Reply to client for a file */ 
 void serve_static(int out_fd, int in_fd, http_request *req, size_t total_size)
 {
     char buf[256];
@@ -168,7 +177,7 @@ void serve_static(int out_fd, int in_fd, http_request *req, size_t total_size)
     sprintf(buf + strlen(buf), "Content-type: text/plain\r\n\r\n");
 
     writen(out_fd, buf, strlen(buf));
-    off_t offset = req->offset; /* copy */
+    off_t offset = req->offset; /* Copy */
     while (offset < req->end) {
         if (sendfile(out_fd, in_fd, &offset, req->end - req->offset) <= 0) {
             break;
@@ -178,6 +187,7 @@ void serve_static(int out_fd, int in_fd, http_request *req, size_t total_size)
     }
 }
 
+/* Reply to client for a directory */
 void handle_directory_request(int out_fd, int dir_fd, char *filename)
 {
     char buf[MAXLINE], m_time[32], size[16];
@@ -187,18 +197,31 @@ void handle_directory_request(int out_fd, int dir_fd, char *filename)
             "body{font-family: monospace; font-size: 13px;}",
             "td {padding: 1.5px 6px;}", "</style></head><body><table>\n");
     writen(out_fd, buf, strlen(buf));
+    /* Open a directory.
+     * On success, return a pointer to the directory stream
+     * On error, return NULL */
     DIR *d = fdopendir(dir_fd);
     struct dirent *dp;
     int ffd;
+    /* Read a directory 
+     * On success, return a pointer to dirent structure
+     * On error, return NULL */
     while ((dp = readdir(d)) != NULL) {
         if (!strcmp(dp->d_name, ".") || !strcmp(dp->d_name, "..")) {
             continue;
         }
+	/* Open and possibly create a file
+	 * On success, return a file descriptor
+	 * On error, return -1 */
         if ((ffd = openat(dir_fd, dp->d_name, O_RDONLY)) == -1) {
             perror(dp->d_name);
             continue;
         }
+	/* Get file status 
+	 * On success, return 0
+	 * On error, return -1  */
         fstat(ffd, &statbuf);
+	/* Format date and time */
         strftime(m_time, sizeof(m_time), "%Y-%m-%d %H:%M",
                  localtime(&statbuf.st_mtime));
         format_size(size, &statbuf);
@@ -253,6 +276,7 @@ bool server(int argc, char **argv){
         return false;
     }
     memset(dir, 0, dir_max_len);
+    /* Get current working directory */
     if(!getcwd(dir, dir_max_len)){
         return false;
     }
@@ -263,12 +287,13 @@ bool server(int argc, char **argv){
 
     while((c = getopt(argc, argv, "hd:p:s")) != -1){
         switch(c){
-            case 'h':
+            case 'h': /* Usage */
                 print_help();
-                return false;
+                return true;
 		break;
-	    case 'd':
+	    case 'd': /* Set working directory */
 		len = strlen(optarg);
+		/* Increase size of directory  */
                 while(len >= dir_max_len){
                     dir_max_len *= 2;
                 }
@@ -285,9 +310,9 @@ bool server(int argc, char **argv){
                     return false;
 		}
 		break;
-	    case 's':
-		break;
-	    case 'p':
+	    case 's': /* Shut down server */
+		return true;
+	    case 'p': /* Set port */
 		port = atoi(optarg);
 		if(port < 0 || port > 65535){
 		    show_message("range of port is 0~65535\n");
@@ -306,10 +331,13 @@ bool server(int argc, char **argv){
         exit(fd);
     }
     
-    // Ignore SIGPIPE signal, so if browser cancels the request, it
-    // won't kill the whole process.
+    /* Ignore SIGPIPE signal, so if browser cancels the request, it
+     * won't kill the whole process. */
     signal(SIGPIPE, SIG_IGN);
     while(true){
+        /* Accept a connection 
+	 * On success, return file descriptor of client
+	 * On error, return -1 */
         connfd = accept(fd, (struct sockaddr *) &clientaddr, &clientlen);
 	process(connfd, &clientaddr);
         close(connfd);

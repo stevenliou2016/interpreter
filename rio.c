@@ -1,10 +1,7 @@
 #include "rio.h"
 #include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
 
 ssize_t writen(int fd, void *usrbuf, size_t n)
 {

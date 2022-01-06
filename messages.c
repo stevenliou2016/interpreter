@@ -1,12 +1,15 @@
+#include "messages.h"
+#include <stdarg.h>
 #include <stdio.h>
-#include <stdbool.h>
-#include<stdarg.h>
 
 bool is_visible = false;
 char *log_file = NULL;
 
-void message_init(bool is_v, char *l_file){
+void message_init(bool is_v){
     is_visible = is_v;
+}
+
+void do_log_init(char *l_file){
     log_file = l_file;
 }
 

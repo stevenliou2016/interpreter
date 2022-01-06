@@ -62,7 +62,8 @@ int main(int argc, char **argv){
 	}
     }
     console_init();
-    message_init(is_v, l_file);
+    message_init(is_v);
+    do_log_init(l_file);
     if(!run_console(input_file, l_file, is_v)){
         return -1;
     }

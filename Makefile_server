@@ -1,0 +1,15 @@
+CC = gcc
+CFLAGS = -g -c
+OBJS = server.o mem_manage.o rio.o
+
+server: $(OBJS)
+	$(CC) $(OBJS) -o $@
+
+%.o: %.c
+	$(CC) $(CFLAGS) $< -o $@
+
+
+.PHONY: clean
+
+clean:
+	rm server $(OBJS)

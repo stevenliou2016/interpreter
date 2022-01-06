@@ -1,5 +1,4 @@
-#include <stdbool.h>
-#include <stdio.h>
+#include "mem_manage.h"
 #include "messages.h"
 
 bool mem_alloc_succ(void *p)

@@ -1,16 +1,16 @@
+#include "console.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
+//#include <stdbool.h>
 #include <unistd.h>
-#include <signal.h>
-#include <sys/types.h>
+//#include <signal.h>
+//#include <sys/types.h>
 #include <sys/wait.h>
 #include <time.h>
 #include <errno.h>
 #include <ctype.h>
-#include <stdarg.h>
-#include "console.h"
+//#include <stdarg.h>
 #include "mem_manage.h"
 #include "command_line.h"
 #include "queue.h"
@@ -57,12 +57,43 @@ void console_init(){
     load_history(history_file_name);
 }
 
-void trim_newline(char *s){
-    while(s && *s != '\n' && *s != '\0'){
+/* Trim leading and tailing whitespace, return a pointer to a copy string. It will be free by caller */
+char *trim_whitespace(char *s){
+    if(!s){
+        return s;
+    }
+    char *end = NULL;
+
+    /* Trim leading whitespace */
+    while(isspace(*s)){
         s++;
     }
-    if(s)
-        *s = '\0';
+
+    if(*s == '\0'){
+        return strdup(s);
+    }
+
+    /* Trim tailing whitespace */
+    end = s + strlen(s) - 1;
+    while(end > s && isspace(*end)){
+        end--;
+    }
+    *(end + 1) = '\0';
+
+    return strdup(s);
+}
+
+char *trim_newline(char *s){
+    char *temp = s;
+    if(!temp){
+        return temp;
+    }
+    while(*temp != '\n' && *temp != '\0'){
+        temp++;
+    }
+    *temp = '\0';
+
+    return s;
 }
 
 char **parse_cmd(int *argc, char *cmd){
@@ -79,14 +110,14 @@ char **parse_cmd(int *argc, char *cmd){
     char **argv_p = argv;
     *argv_p = strtok(cmd, delim);
     if(strncmp("server", cmd, 6) != 0 && strncmp("client", cmd, 6) != 0){
-        trim_newline(*argv_p);
+        *argv_p = trim_newline(*argv_p);
     }
     (*argc)++;
 
     while(*argv_p++){
         *argv_p = strtok(NULL, delim);
         if(strncmp("server", cmd, 6) != 0 && strncmp("client", cmd, 6) != 0){
-            trim_newline(*argv_p);
+            *argv_p = trim_newline(*argv_p);
         }
 	if(*argv_p){
             (*argc)++;
@@ -414,11 +445,13 @@ bool add_cmd(char *cmd, char *doc, cmd_func op){
 bool run_console(char *input_file, char *l_file, bool is_v){
     FILE *fp, *lfp;
     char *cmd = NULL;
+    char *trim_cmd = NULL;
     size_t len = 0;
     ssize_t nread = 0;
     is_visible = is_v;
     log_file = l_file;
 
+    cmd_line_init(cmd_list);
     if(log_file){
         is_visible = false;
 	show_message("=====start running =====\n");
@@ -439,6 +472,7 @@ bool run_console(char *input_file, char *l_file, bool is_v){
     }
     while(!quit_flag){
         cmd = NULL;
+	trim_cmd = NULL;
 	if(input_file){
             if((nread = getline(&cmd, &len, fp)) == -1){
                 if(errno != 0 && cmd){
@@ -460,26 +494,27 @@ bool run_console(char *input_file, char *l_file, bool is_v){
 	}else{
 	    cmd = cmd_line();
 	}
-	if(cmd == NULL)
+        trim_cmd = trim_whitespace(cmd);
+	if(trim_cmd == NULL)
             continue;
         if(input_file){
-	    show_message("%s", cmd);
+	    show_message("%s", trim_cmd);
 	}
         else{
-	    show_message("%s\n", cmd);
-            add_history_cmd(cmd);
+	    show_message("%s\n", trim_cmd);
+            add_history_cmd(trim_cmd);
             save_history_cmd(history_file_name);
 	}
             
         int arg_cnt = 0;
-        char **arg_val = parse_cmd(&arg_cnt, cmd);
+        char **arg_val = parse_cmd(&arg_cnt, trim_cmd);
         cmd_ptr clist = cmd_list;
-        while(clist && strncmp(cmd, clist->cmd, strlen(cmd)) != 0){
+        while(clist && strncmp(trim_cmd, clist->cmd, strlen(trim_cmd)) != 0){
             clist = clist->next;
         }
 	if(clist){
             bool ret = clist->op(arg_cnt, arg_val);
-	    if(input_file && cmd == "")
+	    if(input_file && trim_cmd == "")
                 return ret;
 	}else{
 	    show_message("unknown command:%s\n", *arg_val);
@@ -488,6 +523,7 @@ bool run_console(char *input_file, char *l_file, bool is_v){
                 return false;
 	}
         free(cmd);
+	free(trim_cmd);
     }
     free_history();
     if(input_file){

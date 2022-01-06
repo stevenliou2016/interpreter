@@ -1,6 +1,6 @@
-#ifndef _RIO_H
-#define _RIO_H
-#include <unistd.h>
+#ifndef __RIO_H__
+#define __RIO_H__
+#include <sys/types.h>
 
 #define MAXLINE 1024 /* max length of a line */
 #define WEB_RIO_BUFSIZE 1024

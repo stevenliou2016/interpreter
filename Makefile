@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -g -c
-OBJS = interpreter.o command_line.o mem_manage.o console.o queue.o client/client.o rio.o server.o
+OBJS = interpreter.o command_line.o mem_manage.o console.o queue.o client/client.o rio.o server.o messages.o
 
 interpreter: $(OBJS)
 	$(CC) $(OBJS) -o $@

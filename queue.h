@@ -1,24 +1,12 @@
-#ifndef LAB0_QUEUE_H
-#define LAB0_QUEUE_H
-
-/*
- * This program implements a queue supporting both FIFO and LIFO
- * operations.
- *
- * It uses a singly-linked list to represent the set of queue elements
- */
+#ifndef __QUEUE_H__
+#define __QUEUE_H__
 
 #include <stdbool.h>
-#include <stddef.h>
+#include <sys/types.h>
 
-/* Data structure declarations */
-
-/* Linked list element (You shouldn't need to change this) */
+/* Structure of an element of list */
 typedef struct ELE {
-    /* Pointer to array holding string.
-     * This array needs to be explicitly allocated and freed
-     */
-    char *value;
+    char *value; 
     struct ELE *next;
 } list_ele_t;
 
@@ -29,18 +17,12 @@ typedef struct {
     int size;
 } queue_t;
 
-/* Operations on queue */
-
-/*
- * Create empty queue.
- * Return NULL if could not allocate space.
- */
 queue_t *q_new();
 
-/*
- * Free ALL storage used by queue.
- * No effect if q is NULL
- */
+
+/* Free ALL storage used by queue.
+ * No effect if q is NULL */
+ 
 void q_free(queue_t *q);
 
 /*

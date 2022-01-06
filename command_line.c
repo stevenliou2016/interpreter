@@ -1,17 +1,14 @@
+#include "command_line.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 #include <unistd.h>
 #include <termios.h>
 #include <errno.h>
 #include <sys/ioctl.h>
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <ctype.h>
 #include "mem_manage.h"
-#include "console.h"
-#include "command_line.h"
 
 size_t max_line = 4096;
 static int history_max_len = 200;
@@ -394,7 +391,7 @@ bool add_history_cmd(const char *cmd){
     }
     size_t len = strlen(cmd);
     // Do not add duplicated cmd
-    if(history_len > 0 && strncmp(history[history_len - 1], cmd, len) == 0){
+    if(history_len > 0 && len == strlen(history[history_len - 1]) && strncmp(history[history_len - 1], cmd, len) == 0){
         return false;
     }
     if(!history[history_len]){

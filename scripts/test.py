@@ -11,31 +11,30 @@ def printHelp(name):
     print('     -c              #Enable colored text')
     print('     -p PROG         #Program to test')
     print('     -t TESTCASE     #Testcase to test')
-    print('     -v VLEVEL       #Set verbosity level (0-3)')
+    print('     -v              #Make messages visible')
     print('     --valgrind      #Use valgrind')
     sys.exit(0)
 
-def runTest(testCase, vLevel, isColored, useValgrind):
+def runTest(testCase, isVisible, isColored, useValgrind):
     testCaseDir = './testcases'
     RED = '\033[91m'
     GREEN = '\033[92m'
     WHITE = '\033[0m'
     color = WHITE
     command = ['./interpreter']
-    testCases = ['testcase-01-ops.cmd',
-                 'testcase-02-ops.cmd',
-                 'testcase-03-ops.cmd',
-                 'testcase-04-ops.cmd',
-                 'testcase-05-ops.cmd',
-                 'testcase-06-ops.cmd',
-                 'testcase-07-robust.cmd',
-                 'testcase-08-robust.cmd',
-                 'testcase-09-perf.cmd',
-                 'testcase-10-perf.cmd',
-                 'testcase-11-perf.cmd',
-                 'testcase-12-perf.cmd']
+    testCases = ['testcase-01-q-ops.cmd',
+                 'testcase-02-q-ops.cmd',
+                 'testcase-03-q-ops.cmd',
+                 'testcase-04-q-ops.cmd',
+                 'testcase-05-q-ops.cmd',
+                 'testcase-06-q-ops.cmd',
+                 'testcase-07-q-robust.cmd',
+                 'testcase-08-q-perf.cmd',
+                 'testcase-09-q-perf.cmd',
+                 'testcase-10-q-perf.cmd',
+                 'testcase-11-q-perf.cmd']
     
-    scores = [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6]
+    scores = [7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 9]
 
     if useValgrind:
         command = ['valgrind'] + command
@@ -56,7 +55,10 @@ def runTest(testCase, vLevel, isColored, useValgrind):
     i = 0
     for t in tList:
         fname = '%s/%s' % (testCaseDir, t)
-        commandList = command +  ['-v', vLevel, '-f', fname]
+        if isVisible:
+            commandList = command +  ['-v', '-f', fname]
+        else:
+            commandList = command +  ['-f', fname]
         print('+++ Testing %s' % t)
         try:
             retcode = subprocess.call(commandList)
@@ -98,9 +100,9 @@ def run(name, args):
     testCase = 'allTestCases'
     isColored = False
     useValgrind = False
-    vLevel = '1'
+    isVisible = False
 
-    optList, args = getopt.getopt(args, 'hcp:t:v:', ['valgrind'])
+    optList, args = getopt.getopt(args, 'hcp:t:v', ['valgrind'])
 
     for (opt, val) in optList:
         if opt == '-h':
@@ -112,13 +114,13 @@ def run(name, args):
         elif opt == '-t':
             testCase = val
         elif opt == '-v':
-            vLevel = val
+            isVisible = True
         elif opt == '--valgrind':
             useValgrind = True
         else:
             print('unknown option %s', opt)
             printHelp(name)
-    runTest(testCase, vLevel, isColored, useValgrind)
+    runTest(testCase, isVisible, isColored, useValgrind)
     
 
 if __name__ == '__main__':

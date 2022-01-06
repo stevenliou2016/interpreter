@@ -1,6 +1,8 @@
-#include "console.h"
 #ifndef __COMMAND_LINE__
 #define __COMMAND_LINE__
+#include <stdbool.h>
+#include <sys/types.h>
+#include "console.h"
 
 void cmd_line_init(cmd_ptr);
 char *cmd_line();
