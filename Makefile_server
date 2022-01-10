@@ -1,8 +1,10 @@
+PROGRAM = server
+PROJECT = interpreter
 CC = gcc
 CFLAGS = -g -c
-OBJS = server.o mem_manage.o rio.o
+OBJS = $(PROJECT)_server.o $(PROJECT)_mem_manage.o $(PROJECT)_rio.o $(PROJECT)_messages.o
 
-server: $(OBJS)
+$(PROGRAM): $(OBJS)
 	$(CC) $(OBJS) -o $@
 
 %.o: %.c

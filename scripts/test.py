@@ -74,24 +74,24 @@ def runTest(testCase, isVisible, isColored, useValgrind):
             getScore += scores[i]
             if isColored:
                 color = GREEN
-            print(color, '%s %d/%d' % (t, getScore, scores[i]), WHITE, sep='')
+            print(color, '---\t%s \t%d/%d' % (t, getScore, scores[i]), WHITE, sep='')
         else:
             if isColored:
                 color = RED
-            print(color, '%s %d/%d' % (t, getScore, scores[i]), WHITE, sep='')
+            print(color, '---\t%s \t%d/%d' % (t, getScore, scores[i]), WHITE, sep='')
         color = WHITE
         totalScore += getScore
         maxScore += scores[i]
         i += 1
-        if totalScore < maxScore:
-            if isColored:
-                color = RED
-            print(color, '---\tTotal\t\t%d/%d' % (totalScore,maxScore), WHITE, sep='')
-        else:
-            if isColored:
-                color = GREEN
-            print(color, '---\tTotal\t\t%d/%d' % (totalScore,maxScore), WHITE, sep='')
-        color = WHITE
+    if totalScore < maxScore:
+        if isColored:
+            color = RED
+        print(color, '---\tTotal\t\t\t%d/%d' % (totalScore,maxScore), WHITE, sep='')
+    else:
+        if isColored:
+            color = GREEN
+        print(color, '---\tTotal\t\t\t%d/%d' % (totalScore,maxScore), WHITE, sep='')
+    color = WHITE
 
 
 

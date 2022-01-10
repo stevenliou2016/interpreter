@@ -1,36 +1,3 @@
-free
-new
-free
-new
-free
-new
-free
-new
-free
-new
-free
-new
-free
-new
-free
-quit
-new
-free
-new
-free
-new
-free
-new
-free
-new
-new
-free
-quit
-new
-quit
-new
-quit
-new
 quit
 new
 quit
@@ -55,6 +22,7 @@ free
 new
 free
 new
+free
 free
 quit
 new
@@ -197,4 +165,36 @@ size
 reverse
 new
 reverse
-reverse
+help
+quit
+new
+quit
+new
+quit
+new
+n
+new
+n
+new
+ih RAND 5
+it RAND 3
+quit
+ih steven
+new
+
+new
+ih steven
+rh
+ih steven
+new
+ih steven
+server -d /home/steven/temp
+quit
+new
+ih steven
+new
+show
+quit
+new
+ih steven
+quit
