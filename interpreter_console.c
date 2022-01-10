@@ -590,7 +590,7 @@ bool RunConsole(char *input_file, char *log_file, bool is_visible) {
     }
 
     trim_cmd = TrimSpace(cmd);
-    if (trim_cmd == NULL){
+    if (trim_cmd == NULL || *trim_cmd == '\0'){
       continue;
     }
 
@@ -609,7 +609,7 @@ bool RunConsole(char *input_file, char *log_file, bool is_visible) {
     }
 
     argv = ParseCmd(&argc, trim_cmd);
-    while (cmd_list && strncmp(*argv, cmd_list->cmd, strlen(*argv)) != 0) {
+    while (cmd_list &&strncmp(*argv, cmd_list->cmd, strlen(*argv)) != 0) {
       cmd_list = cmd_list->next;
     }
     if (cmd_list) {
