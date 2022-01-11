@@ -8,7 +8,7 @@
 #include <sys/wait.h>
 #include <time.h>
 #include "client/interpreter_client.h"
-#include "interpreter_command_line.h"
+#include "interpreter_cmd_line.h"
 #include "interpreter_mem.h"
 #include "interpreter_msg.h"
 #include "interpreter_queue.h"
@@ -110,7 +110,7 @@ char *TrimNewLine(char *str) {
    argv will be ["server", "-p", "9999"]
  * On success, returns a pointer of pointer to strings 
  * On error, returns NULL */
-static char **ParseCmd(int *argc, char *cmd) {
+static char **SplitCmd(int *argc, char *cmd) {
   size_t num_args = 10;
   const char delim[] = " ";
   char **argv = NULL;
@@ -454,8 +454,14 @@ static bool ServerOperation(int argc, char **argv) {
 /* Runs operation of client 
  * On success, return true */
 static bool ClientOperation(int argc, char **argv) {
-  if (!client(argc, argv)) {
-    return false;
+  pid_t client_pid = fork();
+
+  if(client_pid == 0){ /* Child process */
+    if (!RunClient(argc, argv)) {
+      ShowMsg("running client failed\n");
+      exit(-1);
+    }
+    exit(0);
   }
 
   return true;
@@ -608,7 +614,7 @@ bool RunConsole(char *input_file, char *log_file, bool is_visible) {
       }
     }
 
-    argv = ParseCmd(&argc, trim_cmd);
+    argv = SplitCmd(&argc, trim_cmd);
     while (cmd_list &&strncmp(*argv, cmd_list->cmd, strlen(*argv)) != 0) {
       cmd_list = cmd_list->next;
     }
