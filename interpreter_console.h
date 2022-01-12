@@ -33,7 +33,5 @@ typedef struct Buffer {
 } Buffer;
 
 bool ConsoleInit();
-/* Sets what command users can operate on command line */
-bool AddCmd(char *cmd, char *doc, CmdFunction op);
 bool RunConsole(char *input_file, char *log_file, bool is_visible);
 #endif
