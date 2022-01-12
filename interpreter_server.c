@@ -110,21 +110,38 @@ static void HttpRequestFree(HttpRequest *req){
   }
 }
 
-/* Initializes HttpRequest */
-static void HttpRequestInit(HttpRequest *req) {
+/* Initializes HttpRequest 
+ * On success, returns a pointer to HttpRequest 
+ * On error, returns NULL 
+ * The returned pointer needs to be freed by caller */
+static HttpRequest *HttpRequestInit() {
+  HttpRequest *req = malloc(sizeof(HttpRequest));
+
+  if(!req){
+    return NULL;
+  }
   req->file_name = NULL;
   req->offset = 0;
   req->end = 0;
+
+  return req;
 }
 
-/* Parses a request */
-void ParseRequest(int client_fd, HttpRequest *req) {
+/* Parses a request 
+ * On success, returns a pointer to HttpRequest
+ * On error, returns NULL
+ * The returned pointer needs to be freed by caller */
+static HttpRequest *ParseRequest(int client_fd) {
   size_t file_name_len = 0;
   int file_name_idx = 0;
   char *file_name = NULL;
   char buf[MAXLINE], method[MAXLINE], uri[MAXLINE];
   RIO rio;
+  HttpRequest *req = HttpRequestInit();
 
+  if(!req){
+    return NULL;
+  }
   RioReadInit(&rio, client_fd);
   RioReadLine(&rio, buf, MAXLINE);
   sscanf(buf, "%s %s", method, uri);
@@ -159,11 +176,13 @@ void ParseRequest(int client_fd, HttpRequest *req) {
   file_name_len = strlen(file_name);
   req->file_name = malloc((file_name_len + 1) * sizeof(char));
   if(!IsMemAlloc(req->file_name)){
-    return;
+    return NULL;
   }
   memset(req->file_name, 0, (file_name_len + 1) * sizeof(char));
   strncpy(req->file_name, file_name, file_name_len);
   req->file_name[file_name_len] = '\0';
+
+  return req;
 }
 
 void SendErrorToClient(int client_fd, int status, char *msg, char *longmsg) {
@@ -272,11 +291,9 @@ void Process(int client_fd) {
   int file_fd = -1;
   char *msg = NULL;
   struct stat stat_buf;
-  HttpRequest req;
+  HttpRequest *req = ParseRequest(client_fd);
   
-  HttpRequestInit(&req);
-  ParseRequest(client_fd, &req);
-  file_fd = open(req.file_name, O_RDONLY, 0);
+  file_fd = open(req->file_name, O_RDONLY, 0);
   if (file_fd <= 0) {
     status = 404;
     msg = "File not found";
@@ -284,13 +301,13 @@ void Process(int client_fd) {
   } else {
     fstat(file_fd, &stat_buf);
     if (S_ISREG(stat_buf.st_mode)) {
-      if (req.end == 0) {
-        req.end = stat_buf.st_size;
+      if (req->end == 0) {
+        req->end = stat_buf.st_size;
       }
-      if (req.offset > 0) {
+      if (req->offset > 0) {
         status = 206;
       }
-      SendFileToClient(client_fd, file_fd, &req, stat_buf.st_size);
+      SendFileToClient(client_fd, file_fd, req, stat_buf.st_size);
     } else if (S_ISDIR(stat_buf.st_mode)) {
       status = 200;
       SendDirectoryToClient(client_fd, file_fd);
@@ -301,6 +318,7 @@ void Process(int client_fd) {
     }
   }
   close(file_fd);
+  HttpRequestFree(req);
 }
 
 bool main(int argc, char **argv) {
@@ -312,11 +330,6 @@ bool main(int argc, char **argv) {
   size_t port = 9999;
   struct sockaddr_in client_addr;
   socklen_t client_len = sizeof client_addr;
-
-  /* Get current working directory */
-  /*if (!getcwd(dir, dir_max_len)) {
-    return false;
-  }*/
 
   while ((c = getopt(argc, argv, "hd:p:s")) != -1) {
     switch (c) {
