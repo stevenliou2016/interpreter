@@ -10,7 +10,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 #include <sys/sendfile.h>
 #include <sys/stat.h>
 #include <time.h>
@@ -41,18 +40,11 @@ static int ServerSocketToListen(size_t port) {
   if ((server_sock_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
     return -1;
   }
-  /* Eliminates "Address already in use" error from bind */
+  /* Eliminates "Address already in use" error from bind. */
   if (setsockopt(server_sock_fd, SOL_SOCKET, SO_REUSEADDR,
                  (const void *)&opt_val, sizeof(int)) < 0) {
     return -1;
   }
-
-  /* Eliminates "Port already in use" error from bind */
-  if (setsockopt(server_sock_fd, SOL_SOCKET, SO_REUSEPORT,
-                 (const void *)&opt_val, sizeof(int)) < 0) {
-    return -1;
-  }
-
   /* 6 is TCP's protocol number
    * Enable this, much faster : 4000 req/s -> 17000 req/s */
   if (setsockopt(server_sock_fd, 6, TCP_CORK, (const void *)&opt_val,
@@ -364,7 +356,6 @@ bool main(int argc, char **argv) {
   }
   server_fd = ServerSocketToListen(port);
   if (server_fd < 0) {
-    ShowMsg("errno:%d\n", errno);
     exit(server_fd);
   }
 
