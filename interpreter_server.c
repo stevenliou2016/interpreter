@@ -81,7 +81,7 @@ static int ServerSocketToListen(size_t port) {
 }
 
 /* Converts Bytes to K/M/GBytes */
-void FormatSize(char *buf, struct stat *stat) {
+static void FormatSize(char *buf, struct stat *stat) {
   off_t size = 0;
 
   /* Directory */
@@ -104,36 +104,30 @@ void FormatSize(char *buf, struct stat *stat) {
   }
 }
 
-HttpRequest *HttpRequestInit() {
-  size_t file_name_size = 1024;
-  HttpRequest *req = NULL;
-
-  req = malloc(sizeof(HttpRequest));
-  if (!IsMemAlloc(req)) {
-    return NULL;
+static void HttpRequestFree(HttpRequest *req){
+  if(req){
+    if(req->file_name){
+      free(req->file_name);
+    }
+    free(req);
   }
-  req->file_name = malloc(file_name_size);
-  if (!IsMemAlloc(req->file_name)) {
-    return NULL;
-  }
-  memset(req->file_name, 0, file_name_size);
-  req->offset = 0;
-  req->end = 0;
-  return req;
 }
 
-HttpRequest *ParseRequest(int client_fd) {
-  int length = 0;
-  int i = 0;
+/* Initializes HttpRequest */
+static void HttpRequestInit(HttpRequest *req) {
+  req->file_name = NULL;
+  req->offset = 0;
+  req->end = 0;
+}
+
+/* Parses a request */
+void ParseRequest(int client_fd, HttpRequest *req) {
+  size_t file_name_len = 0;
+  int file_name_idx = 0;
   char *file_name = NULL;
   char buf[MAXLINE], method[MAXLINE], uri[MAXLINE];
-  HttpRequest *req = NULL;
   RIO rio;
 
-  req = HttpRequestInit();
-  if (req == NULL) {
-    return NULL;
-  }
   RioReadInit(&rio, client_fd);
   RioReadLine(&rio, buf, MAXLINE);
   sscanf(buf, "%s %s", method, uri);
@@ -152,21 +146,27 @@ HttpRequest *ParseRequest(int client_fd) {
   /* Get file name */
   if (uri[0] == '/') {
     file_name = uri + 1;
-    length = strlen(file_name);
-    if (length == 0) {
+    file_name_len = strlen(file_name);
+    if (file_name_len == 0) {
       file_name = ".";
     } else {
-      i = 0;
-      for (; i < length; ++i) {
-        if (file_name[i] == '?') {
-          file_name[i] = '\0';
+      file_name_idx = 0;
+      for (; file_name_idx < file_name_len; ++file_name_idx) {
+        if (file_name[file_name_idx] == '?') {
+          file_name[file_name_idx] = '\0';
           break;
         }
       }
     }
   }
-  strncpy(req->file_name, file_name, MAXLINE);
-  return req;
+  file_name_len = strlen(file_name);
+  req->file_name = malloc((file_name_len + 1) * sizeof(char));
+  if(!IsMemAlloc(req->file_name)){
+    return;
+  }
+  memset(req->file_name, 0, (file_name_len + 1) * sizeof(char));
+  strncpy(req->file_name, file_name, file_name_len);
+  req->file_name[file_name_len] = '\0';
 }
 
 void SendErrorToClient(int client_fd, int status, char *msg, char *longmsg) {
@@ -208,11 +208,11 @@ void SendFileToClient(int client_fd, int file_fd, HttpRequest *req,
 
 void SendDirectoryToClient(int client_fd, int dir_fd) {
   char buf[MAXLINE], m_time[32], size[16];
-  char *d = NULL;
+  char *dir_tail = NULL;
   int file_fd = -1;
   DIR *dir = NULL;
   struct stat stat_buf;
-  struct dirent *dp = NULL;
+  struct dirent *dirent_ptr = NULL;
 
   /* Send messages to client */
   sprintf(buf, "HTTP/1.1 200 OK\r\n%s%s%s%s%s",
@@ -227,15 +227,15 @@ void SendDirectoryToClient(int client_fd, int dir_fd) {
   /* Read a directory
    * On success, return a pointer to dirent structure
    * On error, return NULL */
-  while ((dp = readdir(dir)) != NULL) {
-    if (!strcmp(dp->d_name, ".") || !strcmp(dp->d_name, "..")) {
+  while ((dirent_ptr = readdir(dir)) != NULL) {
+    if (!strcmp(dirent_ptr->d_name, ".") || !strcmp(dirent_ptr->d_name, "..")) {
       continue;
     }
     /* Open and possibly create a file
      * On success, return a file descriptor
      * On error, return -1 */
-    if ((file_fd = openat(dir_fd, dp->d_name, O_RDONLY)) == -1) {
-      perror(dp->d_name);
+    if ((file_fd = openat(dir_fd, dirent_ptr->d_name, O_RDONLY)) == -1) {
+      ShowMsg("opening %s failed\n", dirent_ptr->d_name);
       continue;
     }
     /* Get file status
@@ -256,11 +256,11 @@ void SendDirectoryToClient(int client_fd, int dir_fd) {
     FormatSize(size, &stat_buf);
     /* File or Directory */
     if (S_ISREG(stat_buf.st_mode) || S_ISDIR(stat_buf.st_mode)) {
-      d = S_ISDIR(stat_buf.st_mode) ? "/" : "";
+      dir_tail = S_ISDIR(stat_buf.st_mode) ? "/" : "";
       sprintf(
           buf,
           "<tr><td><a href=\"%s%s\">%s%s</a></td><td>%s</td><td>%s</td></tr>\n",
-          dp->d_name, d, dp->d_name, d, m_time, size);
+          dirent_ptr->d_name, dir_tail, dirent_ptr->d_name, dir_tail, m_time, size);
       WriteNum(client_fd, buf, strlen(buf));
     }
     close(file_fd);
@@ -275,9 +275,11 @@ void Process(int client_fd) {
   int file_fd = -1;
   char *msg = NULL;
   struct stat stat_buf;
-  HttpRequest *req = ParseRequest(client_fd);
+  HttpRequest req;
   
-  file_fd = open(req->file_name, O_RDONLY, 0);
+  HttpRequestInit(&req);
+  ParseRequest(client_fd, &req);
+  file_fd = open(req.file_name, O_RDONLY, 0);
   if (file_fd <= 0) {
     status = 404;
     msg = "File not found";
@@ -285,13 +287,13 @@ void Process(int client_fd) {
   } else {
     fstat(file_fd, &stat_buf);
     if (S_ISREG(stat_buf.st_mode)) {
-      if (req->end == 0) {
-        req->end = stat_buf.st_size;
+      if (req.end == 0) {
+        req.end = stat_buf.st_size;
       }
-      if (req->offset > 0) {
+      if (req.offset > 0) {
         status = 206;
       }
-      SendFileToClient(client_fd, file_fd, req, stat_buf.st_size);
+      SendFileToClient(client_fd, file_fd, &req, stat_buf.st_size);
     } else if (S_ISDIR(stat_buf.st_mode)) {
       status = 200;
       SendDirectoryToClient(client_fd, file_fd);
@@ -300,31 +302,24 @@ void Process(int client_fd) {
       msg = "Unknow Error";
       SendErrorToClient(client_fd, status, "Error", msg);
     }
-    close(file_fd);
   }
+  close(file_fd);
 }
 
-bool RunServer(int argc, char **argv) {
+bool main(int argc, char **argv) {
   char c = 'h';
   int client_fd = -1;
   int server_fd = -1;
   char *dir = NULL;
-  char *new_dir = NULL;
-  size_t dir_max_len = 1024;
   size_t dir_len = 0;
   size_t port = 9999;
   struct sockaddr_in client_addr;
   socklen_t client_len = sizeof client_addr;
 
-  dir = malloc((dir_max_len + 1) * sizeof(char));
-  if (!IsMemAlloc(dir)) {
-    return false;
-  }
-  memset(dir, 0, (dir_max_len + 1) * sizeof(char));
   /* Get current working directory */
-  if (!getcwd(dir, dir_max_len)) {
+  /*if (!getcwd(dir, dir_max_len)) {
     return false;
-  }
+  }*/
 
   while ((c = getopt(argc, argv, "hd:p:s")) != -1) {
     switch (c) {
@@ -334,23 +329,22 @@ bool RunServer(int argc, char **argv) {
       break;
     case 'd': /* Set working directory */
       dir_len = strlen(optarg);
-      /* Increase size of directory  */
-      if (dir_len > dir_max_len) {
-        new_dir = realloc(dir, (dir_len + 1) * sizeof(char));
-        if (!IsMemAlloc(new_dir)) {
-          return false;
-        }
-	memset(new_dir, 0, (dir_len + 1) * sizeof(char));
-        dir = new_dir;
+      dir = malloc((dir_len + 1) * sizeof(char));
+      if (!IsMemAlloc(dir)) {
+        return false;
       }
+      memset(dir, 0, (dir_len + 1) * sizeof(char));
+      /* Increase size of directory  */
       strncpy(dir, optarg, dir_len);
       dir[dir_len] = '\0';
       /* Changes working directroy 
        * On success, reutrns 0
        * On error , returns -1*/
       if (chdir(dir) == -1) {
+        free(dir);
         return false;
       }
+      free(dir);
       break;
     case 's': /* Shut down server */
       return true;
@@ -385,5 +379,6 @@ bool RunServer(int argc, char **argv) {
     Process(client_fd);
     close(client_fd);
   }
+  free(dir);
   return true;
 }
