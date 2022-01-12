@@ -45,6 +45,11 @@ static int ServerSocketToListen(size_t port) {
                  (const void *)&opt_val, sizeof(int)) < 0) {
     return -1;
   }
+  /* Eliminates "Port already in use" error from bind */
+  if (setsockopt(server_sock_fd, SOL_SOCKET, SO_REUSEPORT,
+                 (const void *)&opt_val, sizeof(int)) < 0) {
+    return -1;
+  }
   /* 6 is TCP's protocol number
    * Enable this, much faster : 4000 req/s -> 17000 req/s */
   if (setsockopt(server_sock_fd, 6, TCP_CORK, (const void *)&opt_val,
