@@ -1,111 +1,33 @@
-==3845== Memcheck, a memory error detector
-==3845== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
-==3845== Using Valgrind-3.13.0 and LibVEX; rerun with -h for copyright info
-==3845== Command: ./interpreter -v -l -f testcases/testcase-01-q-ops.cmd
-==3845== 
-==3845== 
-==3845== HEAP SUMMARY:
-==3845==     in use at exit: 7,224 bytes in 274 blocks
-==3845==   total heap usage: 507 allocs, 233 frees, 121,820 bytes allocated
-==3845== 
-==3845== 1 bytes in 1 blocks are definitely lost in loss record 1 of 58
-==3845==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==3845==    by 0x10CACD: AddCmd (interpreter_console.c:552)
-==3845==    by 0x10B952: ConsoleInit (interpreter_console.c:43)
-==3845==    by 0x109EF5: main (interpreter.c:69)
-==3845== 
-==3845== 1 bytes in 1 blocks are definitely lost in loss record 2 of 58
-==3845==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==3845==    by 0x10CACD: AddCmd (interpreter_console.c:552)
-==3845==    by 0x10B96C: ConsoleInit (interpreter_console.c:44)
-==3845==    by 0x109EF5: main (interpreter.c:69)
-==3845== 
-==3845== 1 bytes in 1 blocks are definitely lost in loss record 3 of 58
-==3845==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==3845==    by 0x10CACD: AddCmd (interpreter_console.c:552)
-==3845==    by 0x10B986: ConsoleInit (interpreter_console.c:45)
-==3845==    by 0x109EF5: main (interpreter.c:69)
-==3845== 
-==3845== 1 bytes in 1 blocks are definitely lost in loss record 4 of 58
-==3845==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==3845==    by 0x10CACD: AddCmd (interpreter_console.c:552)
-==3845==    by 0x10B9A0: ConsoleInit (interpreter_console.c:46)
-==3845==    by 0x109EF5: main (interpreter.c:69)
-==3845== 
-==3845== 1 bytes in 1 blocks are definitely lost in loss record 5 of 58
-==3845==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==3845==    by 0x10CACD: AddCmd (interpreter_console.c:552)
-==3845==    by 0x10B9BA: ConsoleInit (interpreter_console.c:50)
-==3845==    by 0x109EF5: main (interpreter.c:69)
-==3845== 
-==3845== 1 bytes in 1 blocks are definitely lost in loss record 6 of 58
-==3845==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==3845==    by 0x10CACD: AddCmd (interpreter_console.c:552)
-==3845==    by 0x10B9D4: ConsoleInit (interpreter_console.c:54)
-==3845==    by 0x109EF5: main (interpreter.c:69)
-==3845== 
-==3845== 1 bytes in 1 blocks are definitely lost in loss record 7 of 58
-==3845==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==3845==    by 0x10CACD: AddCmd (interpreter_console.c:552)
-==3845==    by 0x10B9EE: ConsoleInit (interpreter_console.c:55)
-==3845==    by 0x109EF5: main (interpreter.c:69)
-==3845== 
-==3845== 1 bytes in 1 blocks are definitely lost in loss record 8 of 58
-==3845==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==3845==    by 0x10CACD: AddCmd (interpreter_console.c:552)
-==3845==    by 0x10BA08: ConsoleInit (interpreter_console.c:56)
-==3845==    by 0x109EF5: main (interpreter.c:69)
-==3845== 
-==3845== 1 bytes in 1 blocks are definitely lost in loss record 9 of 58
-==3845==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==3845==    by 0x10CACD: AddCmd (interpreter_console.c:552)
-==3845==    by 0x10BA22: ConsoleInit (interpreter_console.c:57)
-==3845==    by 0x109EF5: main (interpreter.c:69)
-==3845== 
-==3845== 1 bytes in 1 blocks are definitely lost in loss record 10 of 58
-==3845==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==3845==    by 0x10CACD: AddCmd (interpreter_console.c:552)
-==3845==    by 0x10BA3C: ConsoleInit (interpreter_console.c:58)
-==3845==    by 0x109EF5: main (interpreter.c:69)
-==3845== 
-==3845== 1 bytes in 1 blocks are definitely lost in loss record 11 of 58
-==3845==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==3845==    by 0x10CACD: AddCmd (interpreter_console.c:552)
-==3845==    by 0x10BA56: ConsoleInit (interpreter_console.c:59)
-==3845==    by 0x109EF5: main (interpreter.c:69)
-==3845== 
-==3845== 1 bytes in 1 blocks are definitely lost in loss record 12 of 58
-==3845==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==3845==    by 0x10CACD: AddCmd (interpreter_console.c:552)
-==3845==    by 0x10BA70: ConsoleInit (interpreter_console.c:60)
-==3845==    by 0x109EF5: main (interpreter.c:69)
-==3845== 
-==3845== 1 bytes in 1 blocks are definitely lost in loss record 13 of 58
-==3845==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==3845==    by 0x10CACD: AddCmd (interpreter_console.c:552)
-==3845==    by 0x10BA8A: ConsoleInit (interpreter_console.c:61)
-==3845==    by 0x109EF5: main (interpreter.c:69)
-==3845== 
-==3845== 120 bytes in 1 blocks are possibly lost in loss record 54 of 58
-==3845==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==3845==    by 0x4EBDC6B: getdelim (iogetdelim.c:62)
-==3845==    by 0x10CCC3: RunConsole (interpreter_console.c:605)
-==3845==    by 0x109F31: main (interpreter.c:73)
-==3845== 
-==3845== 2,280 bytes in 19 blocks are definitely lost in loss record 58 of 58
-==3845==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==3845==    by 0x4EBDC6B: getdelim (iogetdelim.c:62)
-==3845==    by 0x10CCC3: RunConsole (interpreter_console.c:605)
-==3845==    by 0x109F31: main (interpreter.c:73)
-==3845== 
-==3845== LEAK SUMMARY:
-==3845==    definitely lost: 2,293 bytes in 32 blocks
-==3845==    indirectly lost: 0 bytes in 0 blocks
-==3845==      possibly lost: 120 bytes in 1 blocks
-==3845==    still reachable: 4,811 bytes in 241 blocks
-==3845==         suppressed: 0 bytes in 0 blocks
-==3845== Reachable blocks (those to which a pointer was found) are not shown.
-==3845== To see them, rerun with: --leak-check=full --show-leak-kinds=all
-==3845== 
-==3845== For counts of detected and suppressed errors, rerun with: -v
-==3845== ERROR SUMMARY: 15 errors from 15 contexts (suppressed: 0 from 0)
+==1603== Memcheck, a memory error detector
+==1603== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==1603== Using Valgrind-3.13.0 and LibVEX; rerun with -h for copyright info
+==1603== Command: ./interpreter -v -l -f testcases/testcase-01-q-ops.cmd
+==1603== 
+==1603== 
+==1603== HEAP SUMMARY:
+==1603==     in use at exit: 7,218 bytes in 262 blocks
+==1603==   total heap usage: 495 allocs, 233 frees, 260,074 bytes allocated
+==1603== 
+==1603== 120 bytes in 1 blocks are possibly lost in loss record 41 of 45
+==1603==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==1603==    by 0x4EBDC6B: getdelim (iogetdelim.c:62)
+==1603==    by 0x10CC3B: RunConsole (interpreter_console.c:599)
+==1603==    by 0x109F31: main (interpreter.c:73)
+==1603== 
+==1603== 2,280 bytes in 19 blocks are definitely lost in loss record 45 of 45
+==1603==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==1603==    by 0x4EBDC6B: getdelim (iogetdelim.c:62)
+==1603==    by 0x10CC3B: RunConsole (interpreter_console.c:599)
+==1603==    by 0x109F31: main (interpreter.c:73)
+==1603== 
+==1603== LEAK SUMMARY:
+==1603==    definitely lost: 2,280 bytes in 19 blocks
+==1603==    indirectly lost: 0 bytes in 0 blocks
+==1603==      possibly lost: 120 bytes in 1 blocks
+==1603==    still reachable: 4,818 bytes in 242 blocks
+==1603==         suppressed: 0 bytes in 0 blocks
+==1603== Reachable blocks (those to which a pointer was found) are not shown.
+==1603== To see them, rerun with: --leak-check=full --show-leak-kinds=all
+==1603== 
+==1603== For counts of detected and suppressed errors, rerun with: -v
+==1603== ERROR SUMMARY: 2 errors from 2 contexts (suppressed: 0 from 0)

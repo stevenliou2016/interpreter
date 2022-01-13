@@ -479,13 +479,7 @@ static void FreeCmdList(){
     if(cmd_list->doc){
       free(cmd_list->doc);
     }
-    if(cmd_list->op){
-      free(cmd_list->op);
-    }
     cmd_list = cmd_list->next;
-  }
-  if(g_cmd_list){
-    free(g_cmd_list);
   }
 }
 
@@ -520,41 +514,28 @@ bool AddCmd(char *cmd, char *doc, CmdFunction op) {
     element = element->next;
   }
 
-  //new_cmd_element = malloc(sizeof(CmdElementPtr));
   new_cmd_element = malloc(sizeof(*new_cmd_element));
   if (!IsMemAlloc(new_cmd_element)) {
     return false;
   }
-  //memset(new_cmd_element, 0, sizeof(CmdElementPtr));
   memset(new_cmd_element, 0, sizeof(*new_cmd_element));
 
-  //new_cmd_element->cmd = malloc((cmd_len + 1) * sizeof(char));
   new_cmd_element->cmd = malloc((cmd_len + 1) * sizeof(char));
   if (!IsMemAlloc(new_cmd_element->cmd)) {
     return false;
   }
-  //memset(new_cmd_element->cmd, 0, (cmd_len + 1) * sizeof(char));
   memset(new_cmd_element->cmd, 0, (cmd_len + 1) * sizeof(char));
   strncpy(new_cmd_element->cmd, cmd, cmd_len);
   new_cmd_element->cmd[cmd_len] = '\0';
 
-  //new_cmd_element->doc = malloc((doc_len + 1) * sizeof(char));
   new_cmd_element->doc = malloc((doc_len + 1) * sizeof(char));
   if (!IsMemAlloc(new_cmd_element->doc)) {
     return false;
   }
-  //memset(new_cmd_element->doc, 0, (doc_len + 1) * sizeof(char));
   memset(new_cmd_element->doc, 0, (doc_len + 1) * sizeof(char));
   strncpy(new_cmd_element->doc, doc, doc_len);
   new_cmd_element->doc[doc_len] = '\0';
 
-  //new_cmd_element->op = malloc(sizeof(CmdFunction));
-  new_cmd_element->op = malloc(sizeof(*(new_cmd_element->op)));
-  if (!IsMemAlloc(new_cmd_element->op)) {
-    return false;
-  }
-  //memset(new_cmd_element->op, 0, sizeof(CmdFunction));
-  memset(new_cmd_element->op, 0, sizeof(*(new_cmd_element->op)));
   new_cmd_element->op = op;
   new_cmd_element->next = NULL;
   *last = new_cmd_element;

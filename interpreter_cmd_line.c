@@ -577,7 +577,7 @@ bool SaveHistoryCmd(const char *file_name) {
 
 void FreeHistory() {
   if (g_history) {
-    for (int i = 0; i < g_history_max_len; i++){
+    for (int i = 0; i < g_history_len; i++){
       if(g_history[i]){
         free(g_history[i]);
       }
