@@ -472,7 +472,10 @@ static bool ClientOperation(int argc, char **argv) {
 
 static void FreeCmdList(){
   CmdElementPtr cmd_list = g_cmd_list;
+  CmdElementPtr cmd_list_ptr = cmd_list;
+
   while(cmd_list){
+    cmd_list_ptr = cmd_list;
     if(cmd_list->cmd){
       free(cmd_list->cmd);
     }
@@ -480,6 +483,7 @@ static void FreeCmdList(){
       free(cmd_list->doc);
     }
     cmd_list = cmd_list->next;
+    free(cmd_list_ptr);
   }
 }
 
@@ -614,7 +618,7 @@ bool RunConsole(char *input_file, char *log_file, bool is_visible) {
       }else{
         if(cmd){
           free(cmd);
-	}
+        }
       }
       continue;
     }
@@ -623,14 +627,35 @@ bool RunConsole(char *input_file, char *log_file, bool is_visible) {
     if (!input_file) {
       /* Adds a new command into command list */
       if(!AddHistoryCmd(trim_cmd)) {
+        if(input_file){
+          free(cmd);
+        }else{
+          if(cmd){
+            free(cmd);
+          }
+        }
         return false;
       }
       /* Saves command list in g_history_file_name */
       if(!SaveHistoryCmd(g_history_file_name)) {
+        if(input_file){
+          free(cmd);
+        }else{
+          if(cmd){
+            free(cmd);
+          }
+        }
         return false;
       }
     }
     if((argv = SplitCmd(&argc, trim_cmd)) == NULL){
+      if(input_file){
+        free(cmd);
+      }else{
+        if(cmd){
+          free(cmd);
+        }
+      }
       continue;
     }
     while (cmd_list &&strncmp(*argv, cmd_list->cmd, strlen(*argv)) != 0) {
@@ -639,12 +664,14 @@ bool RunConsole(char *input_file, char *log_file, bool is_visible) {
     if (cmd_list) {
       ret = cmd_list->op(argc, argv);
       if (input_file && trim_cmd == ""){
+        free(cmd);
         return ret;
       }
     } else {
       ShowMsg("unknown command:%s\n", *argv);
       fflush(stdout);
       if (input_file){
+        free(cmd);
         return false;
       }
     }
@@ -653,8 +680,12 @@ bool RunConsole(char *input_file, char *log_file, bool is_visible) {
       argv = NULL;
     }
   }
-  if(cmd){
+  if(input_file){
     free(cmd);
+  }else{
+    if(cmd){
+      free(cmd);
+    }
   }
   FreeHistory();
   if (input_file) {
