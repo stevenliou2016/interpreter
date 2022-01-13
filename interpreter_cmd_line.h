@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <sys/types.h>
 
-void CmdLineInit(CmdElementPtr cmd_list);
+void CmdLineInit();
 char *CmdLine();
 bool AddHistoryCmd(const char *cmd);
 bool SaveHistoryCmd(const char *file_name);

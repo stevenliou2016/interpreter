@@ -1,4 +1,4 @@
-#include "interpreter_command_line.h"
+#include "interpreter_cmd_line.h"
 #include "interpreter_console.h"
 #include "interpreter_mem.h"
 #include "interpreter_msg.h"
@@ -72,6 +72,12 @@ int main(int argc, char **argv) {
   SetLogFile(log_file);
   if (!RunConsole(input_file, log_file, is_visible)) {
     return -1;
+  }
+  if(input_file){
+    free(input_file);
+  }
+  if(log_file){
+    free(log_file);
   }
   return 0;
 }

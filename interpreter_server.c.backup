@@ -1,6 +1,6 @@
 #include "interpreter_server.h"
-#include "interpreter_mem_manage.h"
-#include "interpreter_messages.h"
+#include "interpreter_mem.h"
+#include "interpreter_msg.h"
 #include "interpreter_rio.h"
 #include <dirent.h>
 #include <fcntl.h>
@@ -72,20 +72,25 @@ static int ServerSocketToListen(size_t port) {
   return server_sock_fd;
 }
 
+/* Converts Bytes to K/M/GBytes */
 void FormatSize(char *buf, struct stat *stat) {
   off_t size = 0;
 
+  /* Directory */
   if (S_ISDIR(stat->st_mode)) {
     sprintf(buf, "%s", "[DIR]");
-  } else {
-    size = stat->st_size;
+  } else { /* File */
+    size = stat->st_size; /* Size of file */
     if (size < 1024) {
       sprintf(buf, "%lu", size);
     } else if (size < 1024 * 1024) {
+      /* Converts Bytes to KBytes */
       sprintf(buf, "%.1fK", (double)size / 1024);
     } else if (size < 1024 * 1024 * 1024) {
+      /* Converts Bytes to MBytes */
       sprintf(buf, "%.1fM", (double)size / 1024 / 1024);
     } else {
+      /* Converts Bytes to GBytes */
       sprintf(buf, "%.1fG", (double)size / 1024 / 1024 / 1024);
     }
   }
@@ -96,11 +101,11 @@ HttpRequest *HttpRequestInit() {
   HttpRequest *req = NULL;
 
   req = malloc(sizeof(HttpRequest));
-  if (!mem_alloc_succ(req)) {
+  if (!IsMemAlloc(req)) {
     return NULL;
   }
   req->file_name = malloc(file_name_size);
-  if (!mem_alloc_succ(req->file_name)) {
+  if (!IsMemAlloc(req->file_name)) {
     return NULL;
   }
   memset(req->file_name, 0, file_name_size);
@@ -115,18 +120,18 @@ HttpRequest *ParseRequest(int client_fd) {
   char *file_name = NULL;
   char buf[MAXLINE], method[MAXLINE], uri[MAXLINE];
   HttpRequest *req = NULL;
-  web_rio_t rio;
+  RIO rio;
 
   req = HttpRequestInit();
   if (req == NULL) {
     return NULL;
   }
-  rio_read_init(&rio, client_fd);
-  rio_read_line(&rio, buf, MAXLINE);
+  RioReadInit(&rio, client_fd);
+  RioReadLine(&rio, buf, MAXLINE);
   sscanf(buf, "%s %s", method, uri);
   /* Read all */
   while (buf[0] != '\n' && buf[1] != '\n') { /* \n || \r\n */
-    rio_read_line(&rio, buf, MAXLINE);
+    RioReadLine(&rio, buf, MAXLINE);
     if (buf[0] == 'R' && buf[1] == 'a' && buf[2] == 'n') {
       sscanf(buf, "Range: bytes=%lu-%lu", &req->offset, &req->end);
       /* Range: [start, end] */
@@ -156,13 +161,13 @@ HttpRequest *ParseRequest(int client_fd) {
   return req;
 }
 
-void SendErrorToClient(int fd, int status, char *msg, char *longmsg) {
+void SendErrorToClient(int client_fd, int status, char *msg, char *longmsg) {
   char buf[MAXLINE];
 
   sprintf(buf, "HTTP/1.1 %d %s\r\n", status, msg);
   sprintf(buf + strlen(buf), "Content-length: %lu\r\n\r\n", strlen(longmsg));
   sprintf(buf + strlen(buf), "%s", longmsg);
-  writen(fd, buf, strlen(buf));
+  WriteNum(client_fd, buf, strlen(buf));
 }
 
 void SendFileToClient(int client_fd, int file_fd, HttpRequest *req,
@@ -170,19 +175,21 @@ void SendFileToClient(int client_fd, int file_fd, HttpRequest *req,
   char buf[256];
   off_t offset = 0;
 
+  /* Sends partial file to client */
   if (req->offset > 0) {
     sprintf(buf, "HTTP/1.1 206 Partial\r\n");
     sprintf(buf + strlen(buf), "Content-Range: bytes %lu-%lu/%lu\r\n",
             req->offset, req->end, total_size);
-  } else {
+  } else { /* Sends whole file to client */
     sprintf(buf, "HTTP/1.1 200 OK\r\nAccept-Ranges: bytes\r\n");
   }
   sprintf(buf + strlen(buf), "Cache-Control: no-cache\r\n");
   sprintf(buf + strlen(buf), "Content-length: %lu\r\n", req->end - req->offset);
   sprintf(buf + strlen(buf), "Content-type: text/plain\r\n\r\n");
-  writen(client_fd, buf, strlen(buf));
-  offset = req->offset; /* Copy */
+  WriteNum(client_fd, buf, strlen(buf));
+  offset = req->offset; 
   while (offset < req->end) {
+    /* Sends data which start from offset of file to client */
     if (sendfile(client_fd, file_fd, &offset, req->end - req->offset) <= 0) {
       break;
     }
@@ -204,7 +211,7 @@ void SendDirectoryToClient(int client_fd, int dir_fd) {
           "Content-Type: text/html\r\n\r\n", "<html><head><style>",
           "body{font-family: monospace; font-size: 13px;}",
           "td {padding: 1.5px 6px;}", "</style></head><body><table>\n");
-  writen(client_fd, buf, strlen(buf));
+  WriteNum(client_fd, buf, strlen(buf));
   /* Open a directory.
    * On success, return a pointer to the directory stream
    * On error, return NULL */
@@ -246,12 +253,12 @@ void SendDirectoryToClient(int client_fd, int dir_fd) {
           buf,
           "<tr><td><a href=\"%s%s\">%s%s</a></td><td>%s</td><td>%s</td></tr>\n",
           dp->d_name, d, dp->d_name, d, m_time, size);
-      writen(client_fd, buf, strlen(buf));
+      WriteNum(client_fd, buf, strlen(buf));
     }
     close(file_fd);
   }
   sprintf(buf, "</table></body></html>");
-  writen(client_fd, buf, strlen(buf));
+  WriteNum(client_fd, buf, strlen(buf));
   closedir(dir);
 }
 
@@ -295,17 +302,17 @@ bool RunServer(int argc, char **argv) {
   int server_fd = -1;
   char *dir = NULL;
   char *new_dir = NULL;
-  size_t dir_max_len = 256;
-  size_t len = 0;
+  size_t dir_max_len = 1024;
+  size_t dir_len = 0;
   size_t port = 9999;
   struct sockaddr_in client_addr;
   socklen_t client_len = sizeof client_addr;
 
-  dir = malloc(dir_max_len);
-  if (!mem_alloc_succ(dir)) {
+  dir = malloc((dir_max_len + 1) * sizeof(char));
+  if (!IsMemAlloc(dir)) {
     return false;
   }
-  memset(dir, 0, dir_max_len);
+  memset(dir, 0, (dir_max_len + 1) * sizeof(char));
   /* Get current working directory */
   if (!getcwd(dir, dir_max_len)) {
     return false;
@@ -318,20 +325,21 @@ bool RunServer(int argc, char **argv) {
       return true;
       break;
     case 'd': /* Set working directory */
-      len = strlen(optarg);
+      dir_len = strlen(optarg);
       /* Increase size of directory  */
-      while (len >= dir_max_len) {
-        dir_max_len *= 2;
-      }
-      if (dir_max_len != 256) {
-        new_dir = realloc(dir, dir_max_len);
-        if (!mem_alloc_succ(new_dir)) {
+      if (dir_len > dir_max_len) {
+        new_dir = realloc(dir, (dir_len + 1) * sizeof(char));
+        if (!IsMemAlloc(new_dir)) {
           return false;
         }
+	memset(new_dir, 0, (dir_len + 1) * sizeof(char));
         dir = new_dir;
       }
-      strncpy(dir, optarg, len);
-      dir[len] = '\0';
+      strncpy(dir, optarg, dir_len);
+      dir[dir_len] = '\0';
+      /* Changes working directroy 
+       * On success, reutrns 0
+       * On error , returns -1*/
       if (chdir(dir) == -1) {
         return false;
       }
@@ -341,14 +349,14 @@ bool RunServer(int argc, char **argv) {
     case 'p': /* Set port */
       port = atoi(optarg);
       if (port < 0 || port > 65535) {
-        show_message("range of port is 0~65535\n");
+        ShowMsg("range of port is 0~65535\n");
         exit(0);
       } else if (port == 0 && optarg[0] != '0') {
-        show_message("%s is not in the range 0~65535\n", optarg);
+        ShowMsg("%s is not in the range 0~65535\n", optarg);
       }
       break;
     default:
-      show_message("unknown option:%c", c);
+      ShowMsg("unknown option:%c", c);
       break;
     }
   }

@@ -9,5 +9,5 @@ typedef struct HttpRequest {
   size_t end;
 } HttpRequest;
 
-bool RunServer(int, char **);
+bool RunServer(int argc, char **argv);
 #endif

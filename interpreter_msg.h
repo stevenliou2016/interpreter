@@ -7,5 +7,6 @@ extern char *g_log_file;  /* Path of log file */
 
 void SetMsgVisible(bool is_visible);
 void SetLogFile(char *log_file);
-void ShowMsg(const char *format, ...);
+//void LogMsg(char *format, ...);
+void ShowMsg(char *format, ...);
 #endif

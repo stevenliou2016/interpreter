@@ -1,4 +1,4 @@
-#include "interpreter_command_line.h"
+#include "interpreter_cmd_line.h"
 #include "interpreter_mem.h"
 #include <ctype.h>
 #include <errno.h>
@@ -13,8 +13,7 @@
 size_t g_max_line = 4096;
 static int g_history_max_len = 200;
 static int g_history_len = 0;
-static char **g_history = NULL;
-CmdElementPtr g_cmd_list = NULL;
+static char **g_history = NULL; 
 CmdElementPtr g_cmd_list_ptr = NULL;
 
 enum Action {
@@ -31,8 +30,7 @@ enum Direction { DOWN = 0, UP = 1 };
 
 void HistoryCmd(CmdLineState *, int);
 
-void CmdLineInit(CmdElementPtr cmd_list) {
-  g_cmd_list = cmd_list;
+void CmdLineInit() {
   g_cmd_list_ptr = g_cmd_list;
 }
 
@@ -41,6 +39,7 @@ static void BufferInit(Buffer *buf) {
   buf->len = 0;
 }
 
+/* Concatenates buf with str */
 static void BufferAppend(Buffer *buf, const char *str, int str_len) {
   char *new_buf_val = realloc(buf->val, (buf->len + str_len + 1) * sizeof(char));
 
@@ -62,7 +61,7 @@ static void CmdLineBeep() {
    to its standard input 
  * On success, return a pointer to a command 
  * On error, return NULL
- * Memory is freed by caller */
+ * The returned pointer needs to be freed by caller */
 static char *CmdLineNoTTY() {
   size_t max_len = 256;
   size_t current_len = 0;
@@ -419,10 +418,10 @@ char *CmdLineEdit() {
       break;
     case TAB:
       if(CompleteCmdLine(&cls))
-        return cls.buf;
+        return buf;
       break;
     case ENTER:
-      return cls.buf;
+      return buf;
     case ESC:
       if (read(STDIN_FILENO, seq, 1) == -1)
         break;
@@ -522,17 +521,17 @@ bool AddHistoryCmd(const char *cmd) {
   size_t cmd_len = 0;
 
   if (!g_history) {
-    g_history = malloc((g_history_max_len + 1) * sizeof(char *));
+    g_history = malloc((g_history_max_len) * sizeof(char *));
     if (!IsMemAlloc(g_history)) {
       return false;
     }
-    memset(g_history, 0, g_history_max_len * sizeof(char *));
+    memset(g_history, 0, (g_history_max_len) * sizeof(char *));
   }
   cmd_len = strlen(cmd);
   /* Do not add duplicated command */
   if (g_history_len > 0 && cmd_len == strlen(g_history[g_history_len - 1]) &&
       strncmp(g_history[g_history_len - 1], cmd, cmd_len) == 0) {
-    return false;
+    return true;
   }
   if (!g_history[g_history_len]) {
     g_history[g_history_len] = malloc((cmd_len + 1) * sizeof(char));
@@ -558,24 +557,31 @@ bool AddHistoryCmd(const char *cmd) {
  * On success, return true */
 bool SaveHistoryCmd(const char *file_name) {
   FILE *file_ptr = NULL;
-  int j = 0;
 
   /* Sets file mode creation mask 
    * Only the owner can read or write file_name */
-  umask(S_IXUSR | S_IRWXG | S_IRWXO);
+  mode_t origin_mask = umask(S_IXUSR | S_IRWXG | S_IRWXO);
+  /* Sets original file permission */
+  umask(origin_mask);
   file_ptr = fopen(file_name, "w");
-  if (file_ptr == NULL)
+  if (file_ptr == NULL){
     return false;
-  for (j = 0; j < g_history_len; j++)
-    fprintf(file_ptr, "%s\n", g_history[j]);
+  }
+  for (int i = 0; i < g_history_len; i++){
+    fprintf(file_ptr, "%s\n", g_history[i]);
+  }
   fclose(file_ptr);
+
   return true;
 }
 
 void FreeHistory() {
   if (g_history) {
-    for (int i = 0; i < g_history_len; i++)
-      free(g_history[i]);
+    for (int i = 0; i < g_history_max_len; i++){
+      if(g_history[i]){
+        free(g_history[i]);
+      }
+    }
     free(g_history);
   }
 }

@@ -32,6 +32,8 @@ typedef struct Buffer {
   int len;
 } Buffer;
 
+extern CmdElementPtr g_cmd_list;
+
 bool ConsoleInit();
 bool RunConsole(char *input_file, char *log_file, bool is_visible);
 #endif

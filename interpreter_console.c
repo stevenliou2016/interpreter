@@ -18,21 +18,23 @@ const char g_history_file_name[] = ".history_cmd";
 bool g_quit = false;
 Queue *g_queue = NULL;
 pid_t g_pid = -2; /* Server process ID; -2 is default value */
-static CmdElementPtr g_cmd_list = NULL;
+CmdElementPtr g_cmd_list = NULL;
 
-static bool HelpOperation(int, char **);
-static bool QueueNewOperation(int, char **);
-static bool QueueFreeOperation(int, char **);
-static bool QueueInsertHeadOperation(int, char **);
-static bool QueueInsertTailOperation(int, char **);
-static bool QueueRemoveHeadOperation(int, char **);
-static bool QueueSizeOperation(int, char **);
-static bool QueueReverseOperation(int, char **);
-static bool QueueSortOperation(int, char **);
-static bool QueueShowOperation(int, char **);
-static bool ServerOperation(int, char **);
-static bool ClientOperation(int, char **);
-static bool QuitOperation(int, char **);
+/* Internal functions */
+static bool HelpOperation(int argc, char **argv);
+static bool QueueNewOperation(int argc, char **argv);
+static bool QueueFreeOperation(int argc, char **argv);
+static bool QueueInsertHeadOperation(int argc, char **argv);
+static bool QueueInsertTailOperation(int argc, char **argv);
+static bool QueueRemoveHeadOperation(int argc, char **argv);
+static bool QueueSizeOperation(int argc, char **argv);
+static bool QueueReverseOperation(int argc, char **argv);
+static bool QueueSortOperation(int argc, char **argv);
+static bool QueueShowOperation(int argc, char **argv);
+static bool ServerOperation(int argc, char **argv);
+static bool ClientOperation(int argc, char **argv);
+static bool QuitOperation(int argc, char **argv);
+static bool AddCmd(char *cmd, char *doc, CmdFunction op);
 
 bool ConsoleInit() {
   g_cmd_list = NULL;
@@ -67,7 +69,7 @@ bool ConsoleInit() {
 /* Trims leading and tailing spaces 
  * On success, returns a pointer to a copy string
  * Returns NULL if the input is NULL
- * The returned pointer needs to be free by caller */
+ * The returned pointer needs to be freed by caller */
 char *TrimSpace(char *str) {
   char *end = NULL;
 
@@ -111,7 +113,7 @@ char *TrimNewLine(char *str) {
  * On success, returns a pointer of pointer to strings 
  * On error, returns NULL */
 static char **SplitCmd(int *argc, char *cmd) {
-  size_t num_args = 10;
+  size_t args_max_num = 8;
   const char delim[] = " ";
   char **argv = NULL;
   char **argv_ptr = NULL;
@@ -120,19 +122,19 @@ static char **SplitCmd(int *argc, char *cmd) {
     return NULL;
   }
 
-  argv = malloc((num_args + 1) * sizeof(char *));
+  argv = malloc((args_max_num + 1) * sizeof(char *));
   if(!IsMemAlloc(argv)){
     return NULL;
   }
-  memset(argv, 0, (num_args + 1) * sizeof(char *));
+  memset(argv, 0, (args_max_num + 1) * sizeof(char *));
   argv_ptr = argv;
 
+  (*argc)++;
   *argv_ptr = strtok(cmd, delim);
   if (strncmp("server", cmd, 6) != 0 && strncmp("client", cmd, 6) != 0) {
     *argv_ptr = TrimNewLine(*argv_ptr);
   }
-  (*argc)++;
-  while (*argv_ptr++) {
+  while ((*argc) < args_max_num && *argv_ptr++) {
     *argv_ptr = strtok(NULL, delim);
     if (strncmp("server", cmd, 6) != 0 && strncmp("client", cmd, 6) != 0) {
       *argv_ptr = TrimNewLine(*argv_ptr);
@@ -188,7 +190,7 @@ static bool QueueShowOperation(int argc, char **argv) {
   }
 
   if (g_is_visible || g_log_file) {
-    if (head) {
+    if (head && head->value) {
       ShowMsg("queue = [%s", head->value);
       head = head->next;
     } else {
@@ -237,7 +239,8 @@ static bool QueueFreeOperation(int argc, char **argv) {
 
 /* Generates a random string whose length is between 5 and 10 
  * On success, return the string
- * On error, return NULL */
+ * On error, return NULL 
+ * The returned pointer needs to be freed by caller */
 char *RandomString() {
   char alphabets[] = "abcdefghijklmnopqrstuvwxyz";
   size_t max_str_len = 10;
@@ -467,6 +470,25 @@ static bool ClientOperation(int argc, char **argv) {
   return true;
 }
 
+static void FreeCmdList(){
+  CmdElementPtr cmd_list = g_cmd_list;
+  while(cmd_list){
+    if(cmd_list->cmd){
+      free(cmd_list->cmd);
+    }
+    if(cmd_list->doc){
+      free(cmd_list->doc);
+    }
+    if(cmd_list->op){
+      free(cmd_list->op);
+    }
+    cmd_list = cmd_list->next;
+  }
+  if(g_cmd_list){
+    free(g_cmd_list);
+  }
+}
+
 /* Quits console
  * On success, return true */
 static bool QuitOperation(int argc, char **argv) {
@@ -478,6 +500,7 @@ static bool QuitOperation(int argc, char **argv) {
   if (g_pid != -2) {
     kill(g_pid, SIGTERM);
   }
+  FreeCmdList();
 
   return true;
 }
@@ -497,32 +520,41 @@ bool AddCmd(char *cmd, char *doc, CmdFunction op) {
     element = element->next;
   }
 
-  new_cmd_element = malloc(sizeof(CmdElementPtr));
+  //new_cmd_element = malloc(sizeof(CmdElementPtr));
+  new_cmd_element = malloc(sizeof(*new_cmd_element));
   if (!IsMemAlloc(new_cmd_element)) {
     return false;
   }
+  //memset(new_cmd_element, 0, sizeof(CmdElementPtr));
+  memset(new_cmd_element, 0, sizeof(*new_cmd_element));
 
+  //new_cmd_element->cmd = malloc((cmd_len + 1) * sizeof(char));
   new_cmd_element->cmd = malloc((cmd_len + 1) * sizeof(char));
   if (!IsMemAlloc(new_cmd_element->cmd)) {
     return false;
   }
+  //memset(new_cmd_element->cmd, 0, (cmd_len + 1) * sizeof(char));
   memset(new_cmd_element->cmd, 0, (cmd_len + 1) * sizeof(char));
   strncpy(new_cmd_element->cmd, cmd, cmd_len);
   new_cmd_element->cmd[cmd_len] = '\0';
 
+  //new_cmd_element->doc = malloc((doc_len + 1) * sizeof(char));
   new_cmd_element->doc = malloc((doc_len + 1) * sizeof(char));
   if (!IsMemAlloc(new_cmd_element->doc)) {
     return false;
   }
+  //memset(new_cmd_element->doc, 0, (doc_len + 1) * sizeof(char));
   memset(new_cmd_element->doc, 0, (doc_len + 1) * sizeof(char));
   strncpy(new_cmd_element->doc, doc, doc_len);
   new_cmd_element->doc[doc_len] = '\0';
 
-  new_cmd_element->op = malloc(sizeof(op));
+  //new_cmd_element->op = malloc(sizeof(CmdFunction));
+  new_cmd_element->op = malloc(sizeof(*(new_cmd_element->op)));
   if (!IsMemAlloc(new_cmd_element->op)) {
     return false;
   }
-  memset(new_cmd_element->op, 0, sizeof(op));
+  //memset(new_cmd_element->op, 0, sizeof(CmdFunction));
+  memset(new_cmd_element->op, 0, sizeof(*(new_cmd_element->op)));
   new_cmd_element->op = op;
   new_cmd_element->next = NULL;
   *last = new_cmd_element;
@@ -536,15 +568,14 @@ bool RunConsole(char *input_file, char *log_file, bool is_visible) {
   char **argv = NULL;
   bool ret = false;
   int argc = 0;
-  size_t cmd_line_len = 1024;
-  size_t args_max_num = 10; 
+  size_t cmd_line_len = 0;
   ssize_t num_read = 0;
   FILE *input_file_ptr = NULL;
   CmdElementPtr cmd_list = g_cmd_list;
 
   g_is_visible = is_visible;
   g_log_file = log_file;
-  CmdLineInit(g_cmd_list);
+  CmdLineInit();
 
   if (g_log_file) {
     g_is_visible = false;
@@ -567,43 +598,48 @@ bool RunConsole(char *input_file, char *log_file, bool is_visible) {
     cmd = NULL;
     trim_cmd = NULL;
     cmd_list = g_cmd_list;
-    argv = malloc((args_max_num + 1) * sizeof(char *));
-    if(!IsMemAlloc(argv)){
-      return false;
-    }
-    memset(argv, 0, (args_max_num + 1) * sizeof(char *));
 
     if (input_file) { /* Inputs from input file */
+      /* On success, returns the number of character read 
+       * On error or EOF, returns -1 */
       if ((num_read = getline(&cmd, &cmd_line_len, input_file_ptr)) == -1) {
-        if (errno != 0 && cmd) { 
-          free(cmd);
-          exit(-1);
-        } else {
-          exit(0);
-        }
+        free(cmd);
+        if(errno == 0){ /* EOF */
+	  return true;
+	}
+        return false; /* Error */
       } else {
         trim_cmd = TrimSpace(cmd);
         if (*trim_cmd == '#') {
           /* Shows the description of test case */
           printf("%s\n", trim_cmd);
+          free(cmd);
           continue;
         }
       }
     } else { /* Inputs from console */
       if((cmd = CmdLine()) == NULL){
+        if(cmd){
+          free(cmd);
+	}
         return false;
       }
     }
 
     trim_cmd = TrimSpace(cmd);
     if (trim_cmd == NULL || *trim_cmd == '\0'){
+      if(input_file){
+        free(cmd);
+      }else{
+        if(cmd){
+          free(cmd);
+	}
+      }
       continue;
     }
 
-    if (input_file) {
-      ShowMsg("%s", trim_cmd);
-    } else {
-      ShowMsg("%s\n", trim_cmd);
+    ShowMsg("%s\n", trim_cmd);
+    if (!input_file) {
       /* Adds a new command into command list */
       if(!AddHistoryCmd(trim_cmd)) {
         return false;
@@ -613,8 +649,9 @@ bool RunConsole(char *input_file, char *log_file, bool is_visible) {
         return false;
       }
     }
-
-    argv = SplitCmd(&argc, trim_cmd);
+    if((argv = SplitCmd(&argc, trim_cmd)) == NULL){
+      continue;
+    }
     while (cmd_list &&strncmp(*argv, cmd_list->cmd, strlen(*argv)) != 0) {
       cmd_list = cmd_list->next;
     }
@@ -630,10 +667,13 @@ bool RunConsole(char *input_file, char *log_file, bool is_visible) {
         return false;
       }
     }
-    free(cmd);
     if(argv){
       free(argv);
+      argv = NULL;
     }
+  }
+  if(cmd){
+    free(cmd);
   }
   FreeHistory();
   if (input_file) {

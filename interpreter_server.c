@@ -321,7 +321,7 @@ void Process(int client_fd) {
   HttpRequestFree(req);
 }
 
-bool main(int argc, char **argv) {
+bool RunServer(int argc, char **argv) {
   char c = 'h';
   int client_fd = -1;
   int server_fd = -1;

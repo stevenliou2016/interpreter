@@ -1,0 +1,41 @@
+=====start running =====
+new
+queue = []
+rh
+queue = []
+ih steven
+queue = [steven]
+rh
+queue = []
+ih mark 2
+queue = [mark, mark]
+rh
+queue = [mark]
+ih RAND 3
+queue = [vnnvbydqc, ofcemas, yajfd, mark]
+rh
+queue = [ofcemas, yajfd, mark]
+free
+the queue is freed
+new
+queue = []
+ih steven
+queue = [steven]
+ih mark 2
+queue = [mark, mark, steven]
+ih RAND 3
+queue = [kpgegn, nvstdg, qofsy, mark, mark, steven]
+rh
+queue = [nvstdg, qofsy, mark, mark, steven]
+rh
+queue = [qofsy, mark, mark, steven]
+rh
+queue = [mark, mark, steven]
+rh
+queue = [mark, steven]
+rh
+queue = [steven]
+rh
+queue = []
+rh
+queue = []
