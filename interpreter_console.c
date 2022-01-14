@@ -112,25 +112,44 @@ bool ConsoleInit() {
  * The returned pointer needs to be freed by caller */
 char *TrimSpace(char *str) {
   char *end = NULL;
+  char *new_str = NULL;
+  char *str_ptr = str;
+  size_t str_len = 0;
 
-  if (!str) {
-    return str;
+  if (!str_ptr) {
+    return str_ptr;
   }
   /* Trim leading whitespace */
-  while (isspace(*str)) {
-    str++;
+  while (isspace(*str_ptr)) {
+    str_ptr++;
   }
-  if (*str == '\0') {
-    return str;
+  if (*str_ptr == '\0') {
+    /* Allocates new memory spaces to avoid possibly lost */
+    new_str = malloc(sizeof(char));
+    if(!IsMemAlloc(new_str)){
+      return NULL;
+    }
+    memset(new_str, 0, sizeof(char));
+    return new_str;
   }
   /* Trim tailing whitespace */
-  end = str + strlen(str) - 1;
-  while (end > str && isspace(*end)) {
+  str_len = strlen(str_ptr);
+  end = str_ptr + str_len - 1;
+  while (end > str_ptr && isspace(*end)) {
     end--;
   }
   *(end + 1) = '\0';
 
-  return str;
+  str_len = strlen(str_ptr);
+  new_str = malloc((str_len + 1) * sizeof(char));
+  if(!IsMemAlloc(new_str)){
+    return NULL;
+  }
+  memset(new_str, 0, (str_len + 1) * sizeof(char));
+  strncpy(new_str, str_ptr, str_len);
+  new_str[str_len] = '\0';
+
+  return new_str;
 }
 
 char *TrimNewLine(char *str) {
@@ -623,14 +642,6 @@ bool RunConsole(char *input_file, char *log_file, bool is_visible) {
 	  return true;
 	}
         return false; /* Error */
-      } else {
-        trim_cmd = TrimSpace(cmd);
-        if (*trim_cmd == '#') {
-          /* Shows the description of test case */
-          printf("%s\n", trim_cmd);
-	  FreeString(1, cmd);
-          continue;
-        }
       }
     } else { /* Inputs from console */
       if((cmd = CmdLine()) == NULL){
@@ -640,8 +651,14 @@ bool RunConsole(char *input_file, char *log_file, bool is_visible) {
     }
 
     trim_cmd = TrimSpace(cmd);
-    if (trim_cmd == NULL || *trim_cmd == '\0'){
-      FreeString(1, cmd);
+    FreeString(1, cmd);
+    if (*trim_cmd == '#') {
+      /* Shows the description of test case */
+      printf("%s\n", trim_cmd);
+      FreeString(1, trim_cmd);
+      continue;
+    } else if(trim_cmd == NULL || *trim_cmd == '\0') {
+      FreeString(1, trim_cmd);
       continue;
     }
 
@@ -649,17 +666,17 @@ bool RunConsole(char *input_file, char *log_file, bool is_visible) {
     if (!input_file) {
       /* Adds a new command into command list */
       if(!AddHistoryCmd(trim_cmd)) {
-        FreeString(1, cmd);
+        FreeString(1, trim_cmd);
         return false;
       }
       /* Saves command list in g_history_file_name */
       if(!SaveHistoryCmd(g_history_file_name)) {
-        FreeString(1, cmd);
+        FreeString(1, trim_cmd);
         return false;
       }
     }
     if((argv = SplitCmd(&argc, trim_cmd)) == NULL){
-      FreeString(1, cmd);
+      FreeString(1, trim_cmd);
       continue;
     }
     while (cmd_list &&strncmp(*argv, cmd_list->cmd, strlen(*argv)) != 0) {
@@ -668,14 +685,14 @@ bool RunConsole(char *input_file, char *log_file, bool is_visible) {
     if (cmd_list) {
       ret = cmd_list->op(argc, argv);
       if (input_file && trim_cmd == ""){
-        FreeString(1, cmd);
+        FreeString(1, trim_cmd);
         return ret;
       }
     } else {
       ShowMsg("unknown command:%s\n", *argv);
       fflush(stdout);
       if (input_file){
-        FreeString(1, cmd);
+        FreeString(1, trim_cmd);
         return false;
       }
     }
@@ -683,8 +700,8 @@ bool RunConsole(char *input_file, char *log_file, bool is_visible) {
       free(argv);
       argv = NULL;
     }
+    FreeString(1, trim_cmd);
   }
-  FreeString(1, cmd);
   if (input_file) {
     fclose(input_file_ptr);
   }
