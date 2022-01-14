@@ -40,27 +40,67 @@ bool ConsoleInit() {
   g_cmd_list = NULL;
   srand(time(NULL)); /* For random string */
   /* Adds commands into command list */
-  AddCmd("help", "\t#Show documents", HelpOperation);
-  AddCmd("new", "\t#Create a queue", QueueNewOperation);
-  AddCmd("free", "\t#Delete a queue", QueueFreeOperation);
-  AddCmd("ih",
+  if(!AddCmd("help", "\t#Show documents", HelpOperation)){
+    QuitOperation(0, NULL);
+    return false;
+  }
+  if(!AddCmd("new", "\t#Create a queue", QueueNewOperation)){
+    QuitOperation(0, NULL);
+    return false;
+  }
+  if(!AddCmd("free", "\t#Delete a queue", QueueFreeOperation)){
+    QuitOperation(0, NULL);
+    return false;
+  }
+  if(!AddCmd("ih",
           " str [n]\t#Insert n times of str at head, n>=1. Generate a string "
           "if str is RAND",
-          QueueInsertHeadOperation);
-  AddCmd("it",
+          QueueInsertHeadOperation)){
+    QuitOperation(0, NULL);
+    return false;
+  }
+  if(!AddCmd("it",
           " str [n]\t#Insert n times of str at tail, n>=1. Generate a string "
           "if str is RAND",
-          QueueInsertTailOperation);
-  AddCmd("rh", "\t#Remove the first element", QueueRemoveHeadOperation);
-  AddCmd("size", "\t#Show the size of queue", QueueSizeOperation);
-  AddCmd("reverse", "\t#Reverse the queue", QueueReverseOperation);
-  AddCmd("sort", "\t#Sort the queue", QueueSortOperation);
-  AddCmd("show", "\t#Show the queue", QueueShowOperation);
-  AddCmd("server", "\t#Activate server", ServerOperation);
-  AddCmd("client", "\t#Activate client", ClientOperation);
-  AddCmd("quit", "\t#Exit program", QuitOperation);
+          QueueInsertTailOperation)){
+    QuitOperation(0, NULL);
+    return false;
+  }
+  if(!AddCmd("rh", "\t#Remove the first element", QueueRemoveHeadOperation)){
+    QuitOperation(0, NULL);
+    return false;
+  }
+  if(!AddCmd("size", "\t#Show the size of queue", QueueSizeOperation)){
+    QuitOperation(0, NULL);
+    return false;
+  }
+  if(!AddCmd("reverse", "\t#Reverse the queue", QueueReverseOperation)){
+    QuitOperation(0, NULL);
+    return false;
+  }
+  if(!AddCmd("sort", "\t#Sort the queue", QueueSortOperation)){
+    QuitOperation(0, NULL);
+    return false;
+  }
+  if(!AddCmd("show", "\t#Show the queue", QueueShowOperation)){
+    QuitOperation(0, NULL);
+    return false;
+  }
+  if(!AddCmd("server", "\t#Activate server", ServerOperation)){
+    QuitOperation(0, NULL);
+    return false;
+  }
+  if(!AddCmd("client", "\t#Activate client", ClientOperation)){
+    QuitOperation(0, NULL);
+    return false;
+  }
+  if(!AddCmd("quit", "\t#Exit program", QuitOperation)){
+    QuitOperation(0, NULL);
+    return false;
+  }
   /* Loads history command from a file .history.cmd */
   if(!LoadHistory(g_history_file_name)){
+    QuitOperation(0, NULL);
     return false;
   }
   return true;
@@ -439,10 +479,10 @@ static bool ServerOperation(int argc, char **argv) {
     return false;
   } else if (g_pid == 0) { /* Child process*/
     if (!RunServer(argc, argv)) {
-      g_pid = -2;
+      QuitOperation(argc, argv);
       exit(-1);
     }
-    g_pid = -2;
+    QuitOperation(argc, argv);
     exit(0);
   }
   /* For showing order of message correctly */
@@ -462,29 +502,14 @@ static bool ClientOperation(int argc, char **argv) {
   if(client_pid == 0){ /* Child process */
     if (!RunClient(argc, argv)) {
       ShowMsg("running client failed\n");
+      QuitOperation(argc, argv);
       exit(-1);
     }
+    QuitOperation(argc, argv);
     exit(0);
   }
 
   return true;
-}
-
-static void FreeCmdList(){
-  CmdElementPtr cmd_list = g_cmd_list;
-  CmdElementPtr cmd_list_ptr = cmd_list;
-
-  while(cmd_list){
-    cmd_list_ptr = cmd_list;
-    if(cmd_list->cmd){
-      free(cmd_list->cmd);
-    }
-    if(cmd_list->doc){
-      free(cmd_list->doc);
-    }
-    cmd_list = cmd_list->next;
-    free(cmd_list_ptr);
-  }
 }
 
 /* Quits console
@@ -498,7 +523,7 @@ static bool QuitOperation(int argc, char **argv) {
   if (g_pid != -2) {
     kill(g_pid, SIGTERM);
   }
-  FreeCmdList();
+  FreeCmdList(g_cmd_list);
 
   return true;
 }
@@ -518,14 +543,15 @@ bool AddCmd(char *cmd, char *doc, CmdFunction op) {
     element = element->next;
   }
 
-  new_cmd_element = malloc(sizeof(*new_cmd_element));
+  new_cmd_element = malloc(sizeof(CmdElement));
   if (!IsMemAlloc(new_cmd_element)) {
     return false;
   }
-  memset(new_cmd_element, 0, sizeof(*new_cmd_element));
+  memset(new_cmd_element, 0, sizeof(CmdElement));
 
   new_cmd_element->cmd = malloc((cmd_len + 1) * sizeof(char));
   if (!IsMemAlloc(new_cmd_element->cmd)) {
+    FreeCmdList(new_cmd_element);
     return false;
   }
   memset(new_cmd_element->cmd, 0, (cmd_len + 1) * sizeof(char));
@@ -534,6 +560,7 @@ bool AddCmd(char *cmd, char *doc, CmdFunction op) {
 
   new_cmd_element->doc = malloc((doc_len + 1) * sizeof(char));
   if (!IsMemAlloc(new_cmd_element->doc)) {
+    FreeCmdList(new_cmd_element);
     return false;
   }
   memset(new_cmd_element->doc, 0, (doc_len + 1) * sizeof(char));
@@ -570,11 +597,14 @@ bool RunConsole(char *input_file, char *log_file, bool is_visible) {
   /* Checks existence of file */
   if (input_file && access(input_file, F_OK) == -1) {
     ShowMsg("%s does not exist\n", input_file);
+    QuitOperation(0, NULL);
     return false;
   }
   if (input_file) {
     if (!(input_file_ptr = fopen(input_file, "r"))) {
       ShowMsg("open file %s failed\n", input_file);
+      QuitOperation(0, NULL);
+      fclose(input_file_ptr);
       return false;
     }
   }
@@ -588,7 +618,7 @@ bool RunConsole(char *input_file, char *log_file, bool is_visible) {
       /* On success, returns the number of character read 
        * On error or EOF, returns -1 */
       if ((num_read = getline(&cmd, &cmd_line_len, input_file_ptr)) == -1) {
-        free(cmd);
+	FreeString(1, cmd);
         if(errno == 0){ /* EOF */
 	  return true;
 	}
@@ -598,28 +628,20 @@ bool RunConsole(char *input_file, char *log_file, bool is_visible) {
         if (*trim_cmd == '#') {
           /* Shows the description of test case */
           printf("%s\n", trim_cmd);
-          free(cmd);
+	  FreeString(1, cmd);
           continue;
         }
       }
     } else { /* Inputs from console */
       if((cmd = CmdLine()) == NULL){
-        if(cmd){
-          free(cmd);
-	}
+	FreeString(1, cmd);
         return false;
       }
     }
 
     trim_cmd = TrimSpace(cmd);
     if (trim_cmd == NULL || *trim_cmd == '\0'){
-      if(input_file){
-        free(cmd);
-      }else{
-        if(cmd){
-          free(cmd);
-        }
-      }
+      FreeString(1, cmd);
       continue;
     }
 
@@ -627,35 +649,17 @@ bool RunConsole(char *input_file, char *log_file, bool is_visible) {
     if (!input_file) {
       /* Adds a new command into command list */
       if(!AddHistoryCmd(trim_cmd)) {
-        if(input_file){
-          free(cmd);
-        }else{
-          if(cmd){
-            free(cmd);
-          }
-        }
+        FreeString(1, cmd);
         return false;
       }
       /* Saves command list in g_history_file_name */
       if(!SaveHistoryCmd(g_history_file_name)) {
-        if(input_file){
-          free(cmd);
-        }else{
-          if(cmd){
-            free(cmd);
-          }
-        }
+        FreeString(1, cmd);
         return false;
       }
     }
     if((argv = SplitCmd(&argc, trim_cmd)) == NULL){
-      if(input_file){
-        free(cmd);
-      }else{
-        if(cmd){
-          free(cmd);
-        }
-      }
+      FreeString(1, cmd);
       continue;
     }
     while (cmd_list &&strncmp(*argv, cmd_list->cmd, strlen(*argv)) != 0) {
@@ -664,14 +668,14 @@ bool RunConsole(char *input_file, char *log_file, bool is_visible) {
     if (cmd_list) {
       ret = cmd_list->op(argc, argv);
       if (input_file && trim_cmd == ""){
-        free(cmd);
+        FreeString(1, cmd);
         return ret;
       }
     } else {
       ShowMsg("unknown command:%s\n", *argv);
       fflush(stdout);
       if (input_file){
-        free(cmd);
+        FreeString(1, cmd);
         return false;
       }
     }
@@ -680,14 +684,7 @@ bool RunConsole(char *input_file, char *log_file, bool is_visible) {
       argv = NULL;
     }
   }
-  if(input_file){
-    free(cmd);
-  }else{
-    if(cmd){
-      free(cmd);
-    }
-  }
-  FreeHistory();
+  FreeString(1, cmd);
   if (input_file) {
     fclose(input_file_ptr);
   }

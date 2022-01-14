@@ -16,7 +16,6 @@ void Usage(char *program_name) {
   printf("\t-f INPUT_FILE	#Read command from file\n");
   printf("\t-v 			#Enable print messages\n");
   printf("\t-l LOG_FILE		#Log print messages\n");
-  exit(0);
 }
 
 int main(int argc, char **argv) {
@@ -33,11 +32,14 @@ int main(int argc, char **argv) {
     switch (c) {
     case 'h': 
       Usage(argv[0]);
+      FreeString(1, input_file);
+      FreeString(1, log_file);
       exit(0);
     case 'f': 
       input_file_len = strlen(optarg);
       input_file = malloc((input_file_len + 1) * sizeof(char));
       if (!IsMemAlloc(input_file)) {
+        FreeString(1, log_file);
         exit(-1);
       }
       memset(input_file, 0, (input_file_len + 1) * sizeof(char));
@@ -50,6 +52,7 @@ int main(int argc, char **argv) {
     case 'l':
       log_file = malloc((log_file_len + 1) * sizeof(char));
       if (!IsMemAlloc(log_file)) {
+        FreeString(1, input_file);
         exit(-1);
       }
       memset(log_file, 0, (log_file_len + 1) * sizeof(char));
@@ -63,21 +66,28 @@ int main(int argc, char **argv) {
     default:
       printf("Unknown option %c\n", c);
       Usage(argv[0]);
+      FreeString(1, input_file);
+      FreeString(1, log_file);
       exit(0);
     }
   }
-  if(!ConsoleInit())
+  if(!ConsoleInit()){
+    FreeString(1, input_file);
+    FreeString(1, log_file);
+    FreeHistory();
     return -1;
+  }
   SetMsgVisible(is_visible);
   SetLogFile(log_file);
   if (!RunConsole(input_file, log_file, is_visible)) {
+    FreeString(1, input_file);
+    FreeString(1, log_file);
+    FreeHistory();
     return -1;
   }
-  if(input_file){
-    free(input_file);
-  }
-  if(log_file){
-    free(log_file);
-  }
+  FreeString(1, input_file);
+  FreeString(1, log_file);
+  FreeHistory();
+
   return 0;
 }

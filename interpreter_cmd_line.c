@@ -550,6 +550,7 @@ bool AddHistoryCmd(const char *cmd) {
   strncpy(g_history[g_history_len], cmd, cmd_len);
   g_history[g_history_len][cmd_len] = '\0';
   g_history_len++;
+
   return true;
 }
 

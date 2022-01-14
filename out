@@ -1,293 +1,41 @@
-==1471== Memcheck, a memory error detector
-==1471== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
-==1471== Using Valgrind-3.13.0 and LibVEX; rerun with -h for copyright info
-==1471== Command: ./interpreter -v -l -f testcases/testcase-01-q-ops.cmd
-==1471== 
-==1471== 
-==1471== HEAP SUMMARY:
-==1471==     in use at exit: 7,218 bytes in 262 blocks
-==1471==   total heap usage: 495 allocs, 233 frees, 512,478 bytes allocated
-==1471== 
-==1471== 3 bytes in 1 blocks are still reachable in loss record 1 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10C9A8: AddCmd (interpreter_console.c:527)
-==1471==    by 0x10B9A0: ConsoleInit (interpreter_console.c:46)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 3 bytes in 1 blocks are still reachable in loss record 2 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10C9A8: AddCmd (interpreter_console.c:527)
-==1471==    by 0x10B9BA: ConsoleInit (interpreter_console.c:50)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 3 bytes in 1 blocks are still reachable in loss record 3 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10C9A8: AddCmd (interpreter_console.c:527)
-==1471==    by 0x10B9D4: ConsoleInit (interpreter_console.c:54)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 4 bytes in 1 blocks are still reachable in loss record 4 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10C9A8: AddCmd (interpreter_console.c:527)
-==1471==    by 0x10B96C: ConsoleInit (interpreter_console.c:44)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 5 bytes in 1 blocks are still reachable in loss record 5 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10C9A8: AddCmd (interpreter_console.c:527)
-==1471==    by 0x10B952: ConsoleInit (interpreter_console.c:43)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 5 bytes in 1 blocks are still reachable in loss record 6 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10C9A8: AddCmd (interpreter_console.c:527)
-==1471==    by 0x10B986: ConsoleInit (interpreter_console.c:45)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 5 bytes in 1 blocks are still reachable in loss record 7 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10C9A8: AddCmd (interpreter_console.c:527)
-==1471==    by 0x10B9EE: ConsoleInit (interpreter_console.c:55)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 5 bytes in 1 blocks are still reachable in loss record 8 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10C9A8: AddCmd (interpreter_console.c:527)
-==1471==    by 0x10BA22: ConsoleInit (interpreter_console.c:57)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 5 bytes in 1 blocks are still reachable in loss record 9 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10C9A8: AddCmd (interpreter_console.c:527)
-==1471==    by 0x10BA3C: ConsoleInit (interpreter_console.c:58)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 5 bytes in 1 blocks are still reachable in loss record 10 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10C9A8: AddCmd (interpreter_console.c:527)
-==1471==    by 0x10BA8A: ConsoleInit (interpreter_console.c:61)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 7 bytes in 1 blocks are still reachable in loss record 11 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10C9A8: AddCmd (interpreter_console.c:527)
-==1471==    by 0x10BA56: ConsoleInit (interpreter_console.c:59)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 7 bytes in 1 blocks are still reachable in loss record 12 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10C9A8: AddCmd (interpreter_console.c:527)
-==1471==    by 0x10BA70: ConsoleInit (interpreter_console.c:60)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 8 bytes in 1 blocks are still reachable in loss record 13 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10C9A8: AddCmd (interpreter_console.c:527)
-==1471==    by 0x10BA08: ConsoleInit (interpreter_console.c:56)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 15 bytes in 1 blocks are still reachable in loss record 14 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10CA2D: AddCmd (interpreter_console.c:535)
-==1471==    by 0x10BA8A: ConsoleInit (interpreter_console.c:61)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 17 bytes in 1 blocks are still reachable in loss record 15 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10CA2D: AddCmd (interpreter_console.c:535)
-==1471==    by 0x10B952: ConsoleInit (interpreter_console.c:43)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 17 bytes in 1 blocks are still reachable in loss record 16 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10CA2D: AddCmd (interpreter_console.c:535)
-==1471==    by 0x10B96C: ConsoleInit (interpreter_console.c:44)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 17 bytes in 1 blocks are still reachable in loss record 17 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10CA2D: AddCmd (interpreter_console.c:535)
-==1471==    by 0x10B986: ConsoleInit (interpreter_console.c:45)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 17 bytes in 1 blocks are still reachable in loss record 18 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10CA2D: AddCmd (interpreter_console.c:535)
-==1471==    by 0x10BA22: ConsoleInit (interpreter_console.c:57)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 17 bytes in 1 blocks are still reachable in loss record 19 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10CA2D: AddCmd (interpreter_console.c:535)
-==1471==    by 0x10BA3C: ConsoleInit (interpreter_console.c:58)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 18 bytes in 1 blocks are still reachable in loss record 20 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10CA2D: AddCmd (interpreter_console.c:535)
-==1471==    by 0x10BA56: ConsoleInit (interpreter_console.c:59)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 18 bytes in 1 blocks are still reachable in loss record 21 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10CA2D: AddCmd (interpreter_console.c:535)
-==1471==    by 0x10BA70: ConsoleInit (interpreter_console.c:60)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 20 bytes in 1 blocks are still reachable in loss record 22 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10CA2D: AddCmd (interpreter_console.c:535)
-==1471==    by 0x10BA08: ConsoleInit (interpreter_console.c:56)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 24 bytes in 1 blocks are still reachable in loss record 23 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10CFC8: QueueNew (interpreter_queue.c:6)
-==1471==    by 0x10BFEE: QueueNewOperation (interpreter_console.c:219)
-==1471==    by 0x10CEB7: RunConsole (interpreter_console.c:665)
-==1471==    by 0x109F31: main (interpreter.c:73)
-==1471== 
-==1471== 25 bytes in 1 blocks are still reachable in loss record 24 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10CA2D: AddCmd (interpreter_console.c:535)
-==1471==    by 0x10B9EE: ConsoleInit (interpreter_console.c:55)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 27 bytes in 1 blocks are still reachable in loss record 25 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10CA2D: AddCmd (interpreter_console.c:535)
-==1471==    by 0x10B9D4: ConsoleInit (interpreter_console.c:54)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 32 bytes in 1 blocks are still reachable in loss record 26 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10C961: AddCmd (interpreter_console.c:521)
-==1471==    by 0x10B952: ConsoleInit (interpreter_console.c:43)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 32 bytes in 1 blocks are still reachable in loss record 27 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10C961: AddCmd (interpreter_console.c:521)
-==1471==    by 0x10B96C: ConsoleInit (interpreter_console.c:44)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 32 bytes in 1 blocks are still reachable in loss record 28 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10C961: AddCmd (interpreter_console.c:521)
-==1471==    by 0x10B986: ConsoleInit (interpreter_console.c:45)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 32 bytes in 1 blocks are still reachable in loss record 29 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10C961: AddCmd (interpreter_console.c:521)
-==1471==    by 0x10B9A0: ConsoleInit (interpreter_console.c:46)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 32 bytes in 1 blocks are still reachable in loss record 30 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10C961: AddCmd (interpreter_console.c:521)
-==1471==    by 0x10B9BA: ConsoleInit (interpreter_console.c:50)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 32 bytes in 1 blocks are still reachable in loss record 31 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10C961: AddCmd (interpreter_console.c:521)
-==1471==    by 0x10B9D4: ConsoleInit (interpreter_console.c:54)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 32 bytes in 1 blocks are still reachable in loss record 32 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10C961: AddCmd (interpreter_console.c:521)
-==1471==    by 0x10B9EE: ConsoleInit (interpreter_console.c:55)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 32 bytes in 1 blocks are still reachable in loss record 33 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10C961: AddCmd (interpreter_console.c:521)
-==1471==    by 0x10BA08: ConsoleInit (interpreter_console.c:56)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 32 bytes in 1 blocks are still reachable in loss record 34 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10C961: AddCmd (interpreter_console.c:521)
-==1471==    by 0x10BA22: ConsoleInit (interpreter_console.c:57)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 32 bytes in 1 blocks are still reachable in loss record 35 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10C961: AddCmd (interpreter_console.c:521)
-==1471==    by 0x10BA3C: ConsoleInit (interpreter_console.c:58)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 32 bytes in 1 blocks are still reachable in loss record 36 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10C961: AddCmd (interpreter_console.c:521)
-==1471==    by 0x10BA56: ConsoleInit (interpreter_console.c:59)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 32 bytes in 1 blocks are still reachable in loss record 37 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10C961: AddCmd (interpreter_console.c:521)
-==1471==    by 0x10BA70: ConsoleInit (interpreter_console.c:60)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 32 bytes in 1 blocks are still reachable in loss record 38 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10C961: AddCmd (interpreter_console.c:521)
-==1471==    by 0x10BA8A: ConsoleInit (interpreter_console.c:61)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 80 bytes in 1 blocks are still reachable in loss record 39 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10CA2D: AddCmd (interpreter_console.c:535)
-==1471==    by 0x10B9A0: ConsoleInit (interpreter_console.c:46)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 80 bytes in 1 blocks are still reachable in loss record 40 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10CA2D: AddCmd (interpreter_console.c:535)
-==1471==    by 0x10B9BA: ConsoleInit (interpreter_console.c:50)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 120 bytes in 1 blocks are possibly lost in loss record 41 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x4EBDC6B: getdelim (iogetdelim.c:62)
-==1471==    by 0x10CC57: RunConsole (interpreter_console.c:590)
-==1471==    by 0x109F31: main (interpreter.c:73)
-==1471== 
-==1471== 552 bytes in 1 blocks are still reachable in loss record 42 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x4EBCF29: __fopen_internal (iofopen.c:65)
-==1471==    by 0x4EBCF29: fopen@@GLIBC_2.2.5 (iofopen.c:89)
-==1471==    by 0x10CBE2: RunConsole (interpreter_console.c:576)
-==1471==    by 0x109F31: main (interpreter.c:73)
-==1471== 
-==1471== 1,600 bytes in 1 blocks are still reachable in loss record 43 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10B27C: AddHistoryCmd (interpreter_cmd_line.c:524)
-==1471==    by 0x10B6D6: LoadHistory (interpreter_cmd_line.c:604)
-==1471==    by 0x10BA96: ConsoleInit (interpreter_console.c:63)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 1,793 bytes in 200 blocks are still reachable in loss record 44 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x10B397: AddHistoryCmd (interpreter_cmd_line.c:537)
-==1471==    by 0x10B6D6: LoadHistory (interpreter_cmd_line.c:604)
-==1471==    by 0x10BA96: ConsoleInit (interpreter_console.c:63)
-==1471==    by 0x109EF5: main (interpreter.c:69)
-==1471== 
-==1471== 2,280 bytes in 19 blocks are definitely lost in loss record 45 of 45
-==1471==    at 0x4C31B0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
-==1471==    by 0x4EBDC6B: getdelim (iogetdelim.c:62)
-==1471==    by 0x10CC57: RunConsole (interpreter_console.c:590)
-==1471==    by 0x109F31: main (interpreter.c:73)
-==1471== 
-==1471== LEAK SUMMARY:
-==1471==    definitely lost: 2,280 bytes in 19 blocks
-==1471==    indirectly lost: 0 bytes in 0 blocks
-==1471==      possibly lost: 120 bytes in 1 blocks
-==1471==    still reachable: 4,818 bytes in 242 blocks
-==1471==         suppressed: 0 bytes in 0 blocks
-==1471== 
-==1471== For counts of detected and suppressed errors, rerun with: -v
-==1471== ERROR SUMMARY: 2 errors from 2 contexts (suppressed: 0 from 0)
+# Test of insert_head and remove_head
+new
+queue = []
+rh
+queue = []
+ih steven
+queue = [steven]
+rh
+queue = []
+ih mark 2
+queue = [mark, mark]
+rh
+queue = [mark]
+ih RAND 3
+queue = [cbnferwt, ysvagl, bjfxeox, mark]
+rh
+queue = [ysvagl, bjfxeox, mark]
+free
+the queue is freed
+new
+queue = []
+ih steven
+queue = [steven]
+ih mark 2
+queue = [mark, mark, steven]
+ih RAND 3
+queue = [pmflhwf, yoztofewki, kcgksivzh, mark, mark, steven]
+rh
+queue = [yoztofewki, kcgksivzh, mark, mark, steven]
+rh
+queue = [kcgksivzh, mark, mark, steven]
+rh
+queue = [mark, mark, steven]
+rh
+queue = [mark, steven]
+rh
+queue = [steven]
+rh
+queue = []
+rh
+queue = []
