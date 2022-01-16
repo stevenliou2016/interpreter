@@ -660,6 +660,7 @@ bool RunConsole(char *input_file, char *log_file, bool is_visible) {
     } else { /* Inputs from console */
       if((cmd = CmdLine()) == NULL){
 	FreeString(1, cmd);
+        QuitOperation(0, NULL);
         return false;
       }
     }
@@ -681,11 +682,13 @@ bool RunConsole(char *input_file, char *log_file, bool is_visible) {
       /* Adds a new command into command list */
       if(!AddHistoryCmd(trim_cmd)) {
         FreeString(1, trim_cmd);
+        QuitOperation(0, NULL);
         return false;
       }
       /* Saves command list in g_history_file_name */
       if(!SaveHistoryCmd(g_history_file_name)) {
         FreeString(1, trim_cmd);
+        QuitOperation(0, NULL);
         return false;
       }
     }
@@ -700,6 +703,9 @@ bool RunConsole(char *input_file, char *log_file, bool is_visible) {
       ret = cmd_list->op(argc, argv);
       if (input_file){
         FreeString(1, trim_cmd);
+	free(argv);
+        QuitOperation(0, NULL);
+        fclose(input_file_ptr);
         return ret;
       }
     } else {
@@ -707,17 +713,17 @@ bool RunConsole(char *input_file, char *log_file, bool is_visible) {
       fflush(stdout);
       if (input_file){
         FreeString(1, trim_cmd);
+	free(argv);
+        QuitOperation(0, NULL);
+        fclose(input_file_ptr);
         return false;
       }
     }
-    if(argv){
-      free(argv);
-      argv = NULL;
-    }
+    free(argv);
     FreeString(1, trim_cmd);
   }
-  if (input_file) {
-    fclose(input_file_ptr);
-  }
+  QuitOperation(0, NULL);
+  fclose(input_file_ptr);
+
   return true;
 }
