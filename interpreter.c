@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
   size_t input_file_len = 0;
   size_t log_file_len = 20;
   bool is_visible = false; /* the messages are visible if it's true */
-  char c = '\0';
+  char c = 'h';
   time_t seconds = 0;
   struct tm *today;
 

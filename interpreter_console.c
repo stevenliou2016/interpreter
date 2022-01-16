@@ -177,7 +177,7 @@ static char **SplitCmd(int *argc, char *cmd) {
   char **argv = NULL;
   char **argv_ptr = NULL;
 
-  if (!cmd){
+  if (!cmd || !argc){
     return NULL;
   }
 
@@ -239,7 +239,7 @@ static bool QueueShowOperation(int argc, char **argv) {
   size_t show_len = 4;
   bool is_show_cmd = false;
 
-  if (IsQueueNULL()) {
+  if (IsQueueNULL() || !argv || !*argv) {
     return false;
   }
 
@@ -301,7 +301,7 @@ static bool QueueFreeOperation(int argc, char **argv) {
  * On error, return NULL 
  * The returned pointer needs to be freed by caller */
 char *RandomString() {
-  char alphabets[] = "abcdefghijklmnopqrstuvwxyz";
+  const char alphabets[] = "abcdefghijklmnopqrstuvwxyz";
   size_t max_str_len = 10;
   size_t min_str_len = 5;
   size_t str_len = 0;
@@ -333,20 +333,24 @@ static bool QueueInsertHeadOperation(int argc, char **argv) {
   char *str = NULL;
   bool is_random = false;
 
-  if (IsQueueNULL() || argc < 2) {
+  if (IsQueueNULL() || argc < 2 || !argv) {
     return false;
   }
-  if (argc > 2) {
+  if (argc > 2 && argv[2]) {
     num = atoi(argv[2]);
     if (num < 1) {
       ShowMsg("number must be greater than 0\n");
       return false;
     }
   }
-  if (strlen(*(argv + 1)) == 4 && strncmp("RAND", *(argv + 1), 4) == 0) {
-    is_random = true;
-  } else {
-    str = *(argv + 1);
+  if(*(argv + 1)){
+    if (strlen(*(argv + 1)) == 4 && strncmp("RAND", *(argv + 1), 4) == 0) {
+      is_random = true;
+    } else {
+      str = *(argv + 1);
+    }
+  }else{
+    return false;
   }
   for (int i = 0; i < num; i++) {
     if (is_random) {
@@ -376,20 +380,24 @@ static bool QueueInsertTailOperation(int argc, char **argv) {
   char *str = NULL;
   bool is_random = false;
 
-  if (IsQueueNULL() || argc < 2) {
+  if (IsQueueNULL() || argc < 2 || !argv) {
     return false;
   }
-  if (argc > 2) {
+  if (argc > 2 && argv[2]) {
     num = atoi(argv[2]);
     if (num < 1) {
       ShowMsg("number must be greater than 0\n");
       return false;
     }
   }
-  if (strlen(*(argv + 1)) == 4 && strncmp("RAND", *(argv + 1), 4) == 0) {
-    is_random = true;
-  } else {
-    str = *(argv + 1);
+  if(*(argv + 1)){
+    if (strlen(*(argv + 1)) == 4 && strncmp("RAND", *(argv + 1), 4) == 0) {
+      is_random = true;
+    } else {
+      str = *(argv + 1);
+    }
+  }else{
+    return false;
   }
   for (int i = 0; i < num; i++) {
     if (is_random) {
@@ -477,7 +485,7 @@ static void sig_cld() {
 /* Runs operation of server 
  * On success, return true */
 static bool ServerOperation(int argc, char **argv) {
-  if (argc > 1 && strncmp(argv[1], "-s", 2) == 0 && g_pid != -2) {
+  if (argc > 1 && argv[1] && strncmp(argv[1], "-s", 2) == 0) {
     if (g_pid != -2) {
       kill(g_pid, SIGTERM);
       g_pid = -2;
@@ -505,7 +513,7 @@ static bool ServerOperation(int argc, char **argv) {
     exit(0);
   }
   /* For showing order of message correctly */
-  if (argc > 1 && strncmp(argv[1], "-h", 2) == 0) {
+  if (argc > 1 && argv[1] && strncmp(argv[1], "-h", 2) == 0) {
     wait(NULL);
     g_pid = -2;
   }
@@ -550,12 +558,17 @@ static bool QuitOperation(int argc, char **argv) {
 /* Adds a command into command list 
  * On success, return true */
 bool AddCmd(char *cmd, char *doc, CmdFunction op) {
-  int cmd_len = strlen(cmd);
-  int doc_len = strlen(doc);
+  int cmd_len = 0;
+  int doc_len = 0;
   CmdElementPtr element = g_cmd_list;
   CmdElementPtr *last = &g_cmd_list; 
   CmdElementPtr new_cmd_element = NULL;
 
+  if(!cmd || !doc || !op){
+    return false;
+  }
+  cmd_len = strlen(cmd);
+  doc_len = strlen(doc);
   /* Gets the address of last element of command list */
   while (element) {
     last = &(element->next);
@@ -602,7 +615,7 @@ bool RunConsole(char *input_file, char *log_file, bool is_visible) {
   size_t cmd_line_len = 0;
   ssize_t num_read = 0;
   FILE *input_file_ptr = NULL;
-  CmdElementPtr cmd_list = g_cmd_list;
+  CmdElementPtr cmd_list;
 
   g_is_visible = is_visible;
   g_log_file = log_file;
@@ -685,7 +698,7 @@ bool RunConsole(char *input_file, char *log_file, bool is_visible) {
     }
     if (cmd_list) {
       ret = cmd_list->op(argc, argv);
-      if (input_file && trim_cmd == ""){
+      if (input_file){
         FreeString(1, trim_cmd);
         return ret;
       }

@@ -35,13 +35,21 @@ void CmdLineInit() {
 }
 
 static void BufferInit(Buffer *buf) {
-  buf->val = NULL;
-  buf->len = 0;
+  if(buf){
+    buf->val = NULL;
+    buf->len = 0;
+  }
 }
 
 /* Concatenates buf with str */
 static void BufferAppend(Buffer *buf, const char *str, int str_len) {
-  char *new_buf_val = realloc(buf->val, (buf->len + str_len + 1) * sizeof(char));
+  char *new_buf_val = NULL;
+  
+  if(!buf || !str){
+    return;
+  }
+
+  new_buf_val = realloc(buf->val, (buf->len + str_len + 1) * sizeof(char));
 
   if (!IsMemAlloc(new_buf_val)){
     return;
@@ -67,7 +75,7 @@ static char *CmdLineNoTTY() {
   size_t current_len = 0;
   char *cmd = NULL;
   char *cmd_ptr = NULL;
-  char c = '\0';
+  int c = EOF;
 
   cmd = malloc((max_len + 1) * sizeof(char));
   if (!IsMemAlloc(cmd)) {
@@ -100,8 +108,12 @@ static char *CmdLineNoTTY() {
 
 /* Sets attributes of terminal 
  * On success, return true */
-static bool EnableRawMode(struct termios *orig) {
+static bool EnableRawMode(const struct termios *orig) {
   struct termios raw = *orig;
+
+  if(!orig){
+    return false;
+  }
 
   /* input modes: no break, no CR to NL, no parity check, no strip char,
    * no start/stop output control. */
@@ -125,8 +137,10 @@ static bool EnableRawMode(struct termios *orig) {
 
 /* Sets default attributes of terminal */
 static bool DisableRawMode(struct termios *orig) {
-  if (tcsetattr(STDIN_FILENO, TCSAFLUSH, orig) < 0)
+  if (!orig || tcsetattr(STDIN_FILENO, TCSAFLUSH, orig) < 0){
     return false;
+  }
+
   return true;
 }
 
@@ -136,19 +150,30 @@ static bool DisableRawMode(struct termios *orig) {
 static int GetColumns() {
   struct winsize ws;
 
-  if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) < 0)
+  if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) < 0){
     return 0;
+  }
+
   return ws.ws_col;
 }
 
 /* Refresh command line */
 static void Refresh(CmdLineState *cls) {
   char seq[64];
-  size_t prompt_len = strlen(cls->prompt);
-  char *cls_buf_ptr = cls->buf;
-  size_t len = cls->len;
-  size_t pos = cls->pos;
+  size_t prompt_len = 0;
+  char *cls_buf_ptr = NULL;
+  size_t len = 0;
+  size_t pos = 0;
   Buffer buf;
+
+  if(!cls){
+    return;
+  }
+
+  prompt_len = strlen(cls->prompt);
+  cls_buf_ptr = cls->buf;
+  len = cls->len;
+  pos = cls->pos;
 
   while ((prompt_len + pos) >= cls->col) {
     cls_buf_ptr++;
@@ -178,6 +203,9 @@ static void Refresh(CmdLineState *cls) {
 
 /* Inserts character c to command line cls->buf */
 static void CmdLineIns(CmdLineState *cls, char c) {
+  if(!cls){
+    return;
+  }
   if (cls->len < g_max_line) {
     /* Inserts c at tail of command line */
     if (cls->len == cls->pos) {
@@ -198,6 +226,9 @@ static void CmdLineIns(CmdLineState *cls, char c) {
 }
 
 static void CmdLineMoveLeft(CmdLineState *cls) {
+  if(!cls){
+    return;
+  }
   if (cls->pos > 0) {
     cls->pos--;
     Refresh(cls);
@@ -207,6 +238,9 @@ static void CmdLineMoveLeft(CmdLineState *cls) {
 }
 
 static void CmdLineMoveRight(CmdLineState *cls) {
+  if(!cls){
+    return;
+  }
   if (cls->pos < cls->len) {
     cls->pos++;
     Refresh(cls);
@@ -216,6 +250,9 @@ static void CmdLineMoveRight(CmdLineState *cls) {
 }
 
 static void CmdLineBacksapce(CmdLineState *cls) {
+  if(!cls){
+    return;
+  }
   if (cls->pos > 0) {
     memmove(cls->buf + cls->pos - 1, cls->buf + cls->pos, cls->len - cls->pos);
     cls->buf[cls->len - 1] = '\0';
@@ -228,6 +265,9 @@ static void CmdLineBacksapce(CmdLineState *cls) {
 }
 
 static void CmdLineDel(CmdLineState *cls) {
+  if(!cls){
+    return;
+  }
   if (cls->pos > 0 && cls->pos < cls->len) {
     memmove(cls->buf + cls->pos, cls->buf + cls->pos + 1,
             cls->len - cls->pos - 1);
@@ -241,6 +281,9 @@ static void CmdLineDel(CmdLineState *cls) {
 }
 
 static void CmdLineMoveHome(CmdLineState *cls) {
+  if(!cls){
+    return;
+  }
   if (cls->pos != 0) {
     cls->pos = 0;
     Refresh(cls);
@@ -248,6 +291,9 @@ static void CmdLineMoveHome(CmdLineState *cls) {
 }
 
 static void CmdLineMoveEnd(CmdLineState *cls) {
+  if(!cls){
+    return;
+  }
   if (cls->pos != 0) {
     cls->pos = cls->len;
     Refresh(cls);
@@ -259,7 +305,12 @@ static bool CompleteCmdLine(CmdLineState *cls) {
   char seq[3];
   bool press_tab = false;
   size_t cmd_len = 0;
-  CmdLineState cls_var = *cls;
+  CmdLineState cls_var;
+
+  if(!cls){
+    return false;
+  }
+  cls_var = *cls;
 
   while (isalpha(cls->buf[0]) && g_cmd_list_ptr) {
     cmd_len = strlen(g_cmd_list_ptr->cmd);
@@ -520,6 +571,9 @@ char *CmdLine() {
 bool AddHistoryCmd(const char *cmd) {
   size_t cmd_len = 0;
 
+  if(!cmd){
+    return false;
+  }
   if (!g_history) {
     g_history = malloc((g_history_max_len) * sizeof(char *));
     if (!IsMemAlloc(g_history)) {
@@ -559,6 +613,9 @@ bool AddHistoryCmd(const char *cmd) {
 bool SaveHistoryCmd(const char *file_name) {
   FILE *file_ptr = NULL;
 
+  if(!file_name){
+    return false;
+  }
   /* Sets file mode creation mask 
    * Only the owner can read or write file_name */
   mode_t origin_mask = umask(S_IXUSR | S_IRWXG | S_IRWXO);
@@ -592,8 +649,13 @@ bool LoadHistory(const char *file_name) {
   char *buf_ptr = NULL;
   FILE *file_ptr = NULL;
 
-  if ((file_ptr = fopen(file_name, "r")) == NULL)
+  if(!file_name){
     return false;
+  }
+
+  if ((file_ptr = fopen(file_name, "r")) == NULL){
+    return false;
+  }
   while (fgets(buf, g_max_line, file_ptr) != NULL) {
     buf_ptr = strchr(buf, '\r');
     if (!buf_ptr)
@@ -603,6 +665,7 @@ bool LoadHistory(const char *file_name) {
     AddHistoryCmd(buf);
   }
   fclose(file_ptr);
+
   return true;
 }
 
@@ -610,6 +673,9 @@ bool LoadHistory(const char *file_name) {
 void HistoryCmd(CmdLineState *cls, int d) {
   size_t cmd_len = 0;
 
+  if(!cls){
+    return;
+  }
   if (g_history_len > 0) {
     if (d == 0) {
       cls->history_idx--;

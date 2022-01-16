@@ -133,7 +133,7 @@ static HttpRequest *HttpRequestInit() {
  * The returned pointer needs to be freed by caller */
 static HttpRequest *ParseRequest(int client_fd) {
   size_t file_name_len = 0;
-  int file_name_idx = 0;
+  int file_name_idx;
   char *file_name = NULL;
   char buf[MAXLINE], method[MAXLINE], uri[MAXLINE];
   RIO rio;
@@ -144,7 +144,7 @@ static HttpRequest *ParseRequest(int client_fd) {
   }
   RioReadInit(&rio, client_fd);
   RioReadLine(&rio, buf, MAXLINE);
-  sscanf(buf, "%s %s", method, uri);
+  sscanf(buf, "%1024s %1024s", method, uri);
   /* Read all */
   while (buf[0] != '\n' && buf[1] != '\n') { /* \n || \r\n */
     RioReadLine(&rio, buf, MAXLINE);
@@ -323,11 +323,11 @@ void Process(int client_fd) {
 
 bool RunServer(int argc, char **argv) {
   char c = 'h';
-  int client_fd = -1;
+  int client_fd;
   int server_fd = -1;
   char *dir = NULL;
   size_t dir_len = 0;
-  size_t port = 9999;
+  int port = 9999;
   struct sockaddr_in client_addr;
   socklen_t client_len = sizeof client_addr;
 

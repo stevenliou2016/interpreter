@@ -10,9 +10,9 @@ void SetMsgVisible(bool is_visible) { g_is_visible = is_visible; }
 void SetLogFile(char *log_file) { g_log_file = log_file; }
 
 void LogMsg(const char *format, va_list args) {
-  FILE *fp;
+  FILE *fp = fopen(g_log_file, "a");
 
-  if (!(fp = fopen(g_log_file, "a"))) {
+  if (!fp) {
     printf("open file %s failed\n", g_log_file);
     return;
   }
@@ -24,7 +24,6 @@ void LogMsg(const char *format, va_list args) {
 
 void ShowMsg(char *format, ...) {
   va_list args;
-  FILE *fp;
 
   if(g_is_visible){
     va_start(args, format);

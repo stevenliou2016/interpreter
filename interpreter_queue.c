@@ -35,12 +35,13 @@ void QueueFree(Queue *queue) {
 }
 
 bool QueueInsertHead(Queue *queue, char *str) {
-  int len = strlen(str);
+  int len = 0;
   ListElement *new_head = NULL;
 
-  if (queue == NULL) {
+  if (queue == NULL || str == NULL) {
     return false;
   }
+  len = strlen(str);
   new_head = malloc(sizeof(ListElement));
   if (new_head == NULL) {
     return false;
@@ -71,12 +72,13 @@ bool QueueInsertHead(Queue *queue, char *str) {
 }
 
 bool QueueInsertTail(Queue *queue, char *str) {
-  int length = strlen(str);
+  int length = 0;
   ListElement *new_tail = NULL;
 
-  if (queue == NULL) {
+  if (queue == NULL || str == NULL) {
     return false;
   }
+  length = strlen(str);
   new_tail = malloc(sizeof(ListElement));
   if (new_tail == NULL) {
     return false;
@@ -106,11 +108,12 @@ bool QueueInsertTail(Queue *queue, char *str) {
 }
 
 bool QueueRemoveHead(Queue *queue) {
-  ListElement *remove_element = queue->head;
+  ListElement *remove_element = NULL;
 
   if (queue == NULL || queue->head == NULL) {
     return false;
   }
+  remove_element = queue->head;
   queue->head = queue->head->next;
   free(remove_element->value);
   free(remove_element);

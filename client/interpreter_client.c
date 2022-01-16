@@ -43,7 +43,6 @@ static int ConnectToServer(const char *ip, size_t port) {
   int client_fd = -1;
   int ret = 0;
   struct sockaddr_in server_addr;
-  socklen_t server_len = sizeof server_addr;
 
   memset(&server_addr, 0, sizeof(server_addr));
   /* Establishes client socket */
@@ -114,7 +113,6 @@ static void GetDir(char *dir_name, int client_fd) {
   size_t msg_len = 20;
   size_t buf_len = msg_len + strlen(dir_name);
   char *buf = NULL;
-  char *dir_name_ptr = dir_name;
 
   buf = malloc(buf_len * sizeof(char));
   if (!IsMemAlloc(buf)) {
@@ -140,6 +138,9 @@ static bool DownloadFile(const char *file_name, const char *ip, size_t port) {
   FILE *file_ptr = NULL;
   RIO rio;
 
+  if(!file_name || !ip){
+    return false;
+  }
   server_buf = malloc((g_buf_max_size + 1) * sizeof(char));
   if (!IsMemAlloc(server_buf)) {
     return false;
@@ -178,6 +179,9 @@ static bool DownloadFile(const char *file_name, const char *ip, size_t port) {
 /* Builds directory if it does not exist
  * On success, returns true */
 static bool BuildDir(const char *dir_name) {
+  if(!dir_name){
+    return false;
+  }
   /* Checks existence of file */
   if (access(dir_name, F_OK) != 0) {
     /* Builds a directory dir_name
@@ -195,6 +199,10 @@ static bool BuildDir(const char *dir_name) {
  * On error, returns NULL */
 static char *GetName(char *buf) {
   char *buf_ptr = NULL;
+
+  if(!buf){
+    return NULL;
+  }
 
   if (strncmp(buf, "<tr><td><a href=", 16) == 0) {
     /* Skips "<tr><td><a href=" */
@@ -220,9 +228,13 @@ static char *GetName(char *buf) {
  * On error, return NULL
  * The returned pointer needs to be freed by caller */
 static char *CompletePath(const char *dir_name, char *file_name) {
-  char *file_name_ptr = file_name;
-  size_t path_len = strlen(dir_name) + strlen(file_name);
+  size_t path_len = 0;
   char *path = NULL;
+
+  if(!dir_name || !file_name){
+    return NULL;
+  }
+  path_len = strlen(dir_name) + strlen(file_name);
 
   path = malloc((path_len + 1) * sizeof(char));
   if (!IsMemAlloc(path)) {
@@ -252,11 +264,13 @@ static void FreeList(char **list) {
 /* Adds a file/directory to a file/directory list
  * On success, returns true */
 static bool AddNameToList(char **list, size_t list_idx, char *name) {
-  size_t name_len = strlen(name);
+  size_t name_len = 0;
 
   if (!list || !name || *name == '\0') {
     return false;
   }
+  name_len = strlen(name);
+
   list[list_idx] = malloc((name_len + 1) * sizeof(char));
   if (!IsMemAlloc(list[list_idx])) {
     return false;
@@ -284,6 +298,10 @@ static bool DownloadDir(char *dir_name, const char *ip, size_t port) {
   char **dir_list_ptr = NULL;
   char **new_list = NULL;
   RIO rio;
+
+  if(!dir_name || !ip){
+    return false;
+  }
 
   if (!BuildDir(dir_name)) {
     return false;
@@ -315,7 +333,7 @@ static bool DownloadDir(char *dir_name, const char *ip, size_t port) {
 
   RioReadInit(&rio, client_fd);
   while (read_num > 0) {
-    memset(server_buf, 0, sizeof(server_buf));
+    memset(server_buf, 0, (g_buf_max_size + 1) * sizeof(char));
     read_num = RioReadLine(&rio, server_buf, MAXLINE);
     if ((name = GetName(server_buf)) == NULL) {
       continue;
