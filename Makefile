@@ -12,7 +12,10 @@ $(Program): $(OBJS)
 	$(CC) $(CFLAGS) $< -o $@
 
 
-.PHONY: clean test
+.PHONY: valgrind test clean
+
+valgrind: $(Program) scripts/test.py
+	scripts/test.py --valgrind -c
 
 test: $(Program) scripts/test.py
 	scripts/test.py -c

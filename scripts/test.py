@@ -34,7 +34,7 @@ def runTest(testCase, isVisible, isColored, useValgrind):
                  'testcase-10-q-perf.cmd',
                  'testcase-11-q-perf.cmd']
     
-    scores = [7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 9]
+    scores = [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 10]
 
     if useValgrind:
         command = ['valgrind'] + command

@@ -190,9 +190,9 @@ static char **SplitCmd(int *argc, char *cmd) {
 
   (*argc)++;
   *argv_ptr = strtok(cmd, delim);
-  if (strncmp("server", cmd, 6) != 0 && strncmp("client", cmd, 6) != 0) {
+  /*if (strncmp("server", cmd, 6) != 0 && strncmp("client", cmd, 6) != 0) {
     *argv_ptr = TrimNewLine(*argv_ptr);
-  }
+  }*/
   while ((*argc) < args_max_num && *argv_ptr++) {
     *argv_ptr = strtok(NULL, delim);
     if (strncmp("server", cmd, 6) != 0 && strncmp("client", cmd, 6) != 0) {
@@ -623,7 +623,6 @@ bool RunConsole(char *input_file, char *log_file, bool is_visible) {
     if (!(input_file_ptr = fopen(input_file, "r"))) {
       ShowMsg("open file %s failed\n", input_file);
       QuitOperation(0, NULL);
-      fclose(input_file_ptr);
       return false;
     }
   }
@@ -638,6 +637,8 @@ bool RunConsole(char *input_file, char *log_file, bool is_visible) {
        * On error or EOF, returns -1 */
       if ((num_read = getline(&cmd, &cmd_line_len, input_file_ptr)) == -1) {
 	FreeString(1, cmd);
+	QuitOperation(0, NULL);
+	fclose(input_file_ptr);
         if(errno == 0){ /* EOF */
 	  return true;
 	}
