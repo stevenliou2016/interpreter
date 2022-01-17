@@ -11,10 +11,9 @@
 #include <unistd.h>
 
 size_t g_max_line = 4096;
-static int g_history_max_len = 200;
+static int g_history_max_len = 100;
 static int g_history_len = 0;
 static char **g_history = NULL; 
-CmdElementPtr g_cmd_list_ptr = NULL;
 
 enum Action {
   CTRL_B = 2,
@@ -29,10 +28,6 @@ enum Action {
 enum Direction { DOWN = 0, UP = 1 };
 
 void HistoryCmd(CmdLineState *, int);
-
-void CmdLineInit() {
-  g_cmd_list_ptr = g_cmd_list;
-}
 
 static void BufferInit(Buffer *buf) {
   if(buf){
@@ -306,16 +301,17 @@ static bool CompleteCmdLine(CmdLineState *cls) {
   bool press_tab = false;
   size_t cmd_len = 0;
   CmdLineState cls_var;
+  CmdElementPtr cmd_list = g_cmd_list;
 
   if(!cls){
     return false;
   }
   cls_var = *cls;
 
-  while (isalpha(cls->buf[0]) && g_cmd_list_ptr) {
-    cmd_len = strlen(g_cmd_list_ptr->cmd);
-    if (cls->len <= cmd_len && strncmp(cls->buf, g_cmd_list_ptr->cmd, cls->len) == 0) {
-      strncpy(cls_var.buf, g_cmd_list_ptr->cmd, cmd_len);
+  while (isalpha(cls->buf[0]) && cmd_list) {
+    cmd_len = strlen(cmd_list->cmd);
+    if (cls->len <= cmd_len && strncmp(cls->buf, cmd_list->cmd, cls->len) == 0) {
+      strncpy(cls_var.buf, cmd_list->cmd, cmd_len);
       cls_var.buf[cmd_len] = '\0';
       cls_var.len = cls_var.pos = cmd_len;
       Refresh(&cls_var);
@@ -338,7 +334,7 @@ static bool CompleteCmdLine(CmdLineState *cls) {
           strncpy(cls->buf, cls_var.buf, cls_var.len);
           cls->buf[cls_var.len] = '\0';
           cls->len = cls->pos = cls_var.len;
-          g_cmd_list_ptr = g_cmd_list;
+          cmd_list = g_cmd_list;
           break;
         case TAB:
           press_tab = true;
@@ -408,7 +404,7 @@ static bool CompleteCmdLine(CmdLineState *cls) {
           strncpy(cls->buf, cls_var.buf, cls_var.len);
           cls->buf[cls_var.len] = '\0';
           cls->len = cls->pos = cls_var.len;
-          g_cmd_list_ptr = g_cmd_list;
+          cmd_list = g_cmd_list;
           break;
         }
         if (c == TAB) {
@@ -416,9 +412,9 @@ static bool CompleteCmdLine(CmdLineState *cls) {
         }
       }
     }
-    g_cmd_list_ptr = g_cmd_list_ptr->next;
+    cmd_list = cmd_list->next;
   }
-  g_cmd_list_ptr = g_cmd_list;
+  cmd_list = g_cmd_list;
   Refresh(cls);
   return false;
 }
@@ -587,7 +583,7 @@ bool AddHistoryCmd(const char *cmd) {
       strncmp(g_history[g_history_len - 1], cmd, cmd_len) == 0) {
     return true;
   }
-  if (!g_history[g_history_len]) {
+  if (g_history_len < g_history_max_len && !g_history[g_history_len]) {
     g_history[g_history_len] = malloc((cmd_len + 1) * sizeof(char));
     if (!IsMemAlloc(g_history[g_history_len])) {
       return false;
@@ -598,8 +594,15 @@ bool AddHistoryCmd(const char *cmd) {
   if (g_history_len == g_history_max_len) {
     /* Remove the oldest history command */
     free(g_history[0]);
-    memmove(g_history, g_history + 1, g_history_max_len - 1);
+    for(int i = 1; i < g_history_max_len; i++){
+      g_history[i - 1] = g_history[i];
+    }
     g_history_len--;
+    g_history[g_history_len] = malloc((cmd_len + 1) * sizeof(char));
+    if(!IsMemAlloc(g_history[g_history_len])){
+      return false;
+    }
+    memset(g_history[g_history_len], 0, (cmd_len + 1) * sizeof(char));
   }
   strncpy(g_history[g_history_len], cmd, cmd_len);
   g_history[g_history_len][cmd_len] = '\0';
@@ -636,6 +639,8 @@ bool SaveHistoryCmd(const char *file_name) {
 void FreeHistory() {
   if (g_history) {
     for (int i = 0; i < g_history_len; i++){
+      printf("i:%d\n", i);
+      printf("%p\n", g_history[i]);
       FreeString(1, g_history[i]);
     }
     free(g_history);
