@@ -15,6 +15,8 @@
 #include <time.h>
 #include <unistd.h>
 
+bool g_server_running = true;
+
 static void PrintUsage() {
   printf("\tCommand\t\tDescription\n");
   printf("\tserver\t\t#Use default port(9999), serve current directory\n");
@@ -321,6 +323,16 @@ void Process(int client_fd) {
   HttpRequestFree(req);
 }
 
+void SIGALRMHandler(){
+  exit(0);
+}
+
+void SIGUSR1Handler(){
+  g_server_running = false;
+  /* Triggers SIGALRMHandler after 1 second */
+  alarm(5);
+}
+
 bool RunServer(int argc, char **argv) {
   char c = 'h';
   int client_fd;
@@ -357,7 +369,7 @@ bool RunServer(int argc, char **argv) {
       free(dir);
       break;
     case 's': /* Shut down server */
-      return true;
+      //return true;
     case 'p': /* Set port */
       port = atoi(optarg);
       if (port < 0 || port > 65535) {
@@ -377,10 +389,13 @@ bool RunServer(int argc, char **argv) {
     exit(server_fd);
   }
 
+  /* For shutting down server */
+  signal(SIGALRM, SIGALRMHandler);
+  signal(SIGUSR1, SIGUSR1Handler);
   /* Ignore SIGPIPE signal, so if browser cancels the request, it
    * won't kill the whole process. */
   signal(SIGPIPE, SIG_IGN);
-  while (true) {
+  while (g_server_running) {
     /* Accept a connection
      * On success, return file descriptor of client
      * On error, return -1 */

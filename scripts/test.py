@@ -28,13 +28,12 @@ def runTest(testCase, isVisible, isColored, useValgrind):
                  'testcase-04-q-ops.cmd',
                  'testcase-05-q-ops.cmd',
                  'testcase-06-q-ops.cmd',
-                 'testcase-07-q-robust.cmd',
-                 'testcase-08-q-perf.cmd',
-                 'testcase-09-q-perf.cmd',
-                 'testcase-10-q-perf.cmd',
-                 'testcase-11-q-perf.cmd']
+                 'testcase-07-q-ops.cmd',
+                 'testcase-08-q-ops.cmd',
+                 'testcase-09-server.cmd',
+                 'testcase-10-client.cmd']
     
-    scores = [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 10]
+    scores = [10, 10, 10, 10, 10, 10, 10, 10, 10, 10]
 
     if useValgrind:
         command = ['valgrind'] + command

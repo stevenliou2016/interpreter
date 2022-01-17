@@ -98,11 +98,7 @@ bool ConsoleInit() {
     QuitOperation(0, NULL);
     return false;
   }
-  /* Loads history command from a file .history.cmd */
-  if(!LoadHistory(g_history_file_name)){
-    QuitOperation(0, NULL);
-    return false;
-  }
+
   return true;
 }
 
@@ -239,7 +235,10 @@ static bool QueueShowOperation(int argc, char **argv) {
   size_t show_len = 4;
   bool is_show_cmd = false;
 
-  if (IsQueueNULL() || !argv || !*argv) {
+  if (IsQueueNULL()) {
+    return true;
+  }
+  if (!argv || !*argv) {
     return false;
   }
 
@@ -286,7 +285,7 @@ static bool QueueNewOperation(int argc, char **argv) {
 
 static bool QueueFreeOperation(int argc, char **argv) {
   if (IsQueueNULL()) {
-    return false;
+    return true;
   }
 
   QueueFree(g_queue);
@@ -333,7 +332,10 @@ static bool QueueInsertHeadOperation(int argc, char **argv) {
   char *str = NULL;
   bool is_random = false;
 
-  if (IsQueueNULL() || argc < 2 || !argv) {
+  if(IsQueueNULL()){
+    return true;
+  }
+  if (argc < 2 || !argv) {
     return false;
   }
   if (argc > 2 && argv[2]) {
@@ -380,7 +382,10 @@ static bool QueueInsertTailOperation(int argc, char **argv) {
   char *str = NULL;
   bool is_random = false;
 
-  if (IsQueueNULL() || argc < 2 || !argv) {
+  if(IsQueueNULL()){
+    return true;
+  }
+  if (argc < 2 || !argv) {
     return false;
   }
   if (argc > 2 && argv[2]) {
@@ -423,7 +428,7 @@ static bool QueueInsertTailOperation(int argc, char **argv) {
  * On success, return true */
 static bool QueueRemoveHeadOperation(int argc, char **argv) {
   if (IsQueueNULL()) {
-    return false;
+    return true;
   }
 
   if (!g_queue->head) {
@@ -443,7 +448,7 @@ static bool QueueRemoveHeadOperation(int argc, char **argv) {
  * On success, return true */
 static bool QueueSizeOperation(int argc, char **argv) {
   if (IsQueueNULL()) {
-    return false;
+    return true;
   }
 
   ShowMsg("the size of queue is %d\n", QueueSize(g_queue));
@@ -455,7 +460,7 @@ static bool QueueSizeOperation(int argc, char **argv) {
  * On success, return true */
 static bool QueueReverseOperation(int argc, char **argv) {
   if (IsQueueNULL()) {
-    return false;
+    return true;
   }
 
   QueueReverse(g_queue);
@@ -468,7 +473,7 @@ static bool QueueReverseOperation(int argc, char **argv) {
  * On success, return true */
 static bool QueueSortOperation(int argc, char **argv) {
   if (IsQueueNULL()) {
-    return false;
+    return true;
   }
 
   QueueSort(g_queue);
@@ -487,16 +492,19 @@ static void sig_cld() {
 static bool ServerOperation(int argc, char **argv) {
   if (argc > 1 && argv[1] && strncmp(argv[1], "-s", 2) == 0) {
     if (g_pid != -2) {
-      kill(g_pid, SIGTERM);
+      kill(g_pid, SIGUSR1);
       g_pid = -2;
+      QuitOperation(argc, argv);
       return true;
     } else {
       ShowMsg("there is no server running\n");
+      QuitOperation(argc, argv);
       return false;
     }
   }
   if (g_pid > 0) {
     ShowMsg("the server is running\n");
+    QuitOperation(argc, argv);
     return true;
   }
   signal(SIGCLD, sig_cld);
@@ -551,6 +559,7 @@ static bool QuitOperation(int argc, char **argv) {
     kill(g_pid, SIGTERM);
   }
   FreeCmdList(g_cmd_list);
+  g_cmd_list = NULL;
 
   return true;
 }
@@ -615,11 +624,24 @@ bool RunConsole(char *input_file, char *log_file, bool is_visible) {
   size_t cmd_line_len = 0;
   ssize_t num_read = 0;
   FILE *input_file_ptr = NULL;
+  FILE *history_file_name_ptr = NULL;
   CmdElementPtr cmd_list;
 
   g_is_visible = is_visible;
   g_log_file = log_file;
-  CmdLineInit();
+
+  /* Loads history command from a file .history.cmd */
+  if(!input_file){
+    /* Checks existence of file */
+    if(access(g_history_file_name, F_OK) == -1){
+      history_file_name_ptr = fopen(g_history_file_name, "w");
+      fclose(history_file_name_ptr);
+    }
+    if(!LoadHistory(g_history_file_name)){
+      QuitOperation(0, NULL);
+      return false;
+    }
+  }
 
   if (g_log_file) {
     g_is_visible = false;
@@ -701,29 +723,17 @@ bool RunConsole(char *input_file, char *log_file, bool is_visible) {
     }
     if (cmd_list) {
       ret = cmd_list->op(argc, argv);
-      if (input_file){
-        FreeString(1, trim_cmd);
-	free(argv);
-        QuitOperation(0, NULL);
-        fclose(input_file_ptr);
-        return ret;
-      }
     } else {
       ShowMsg("unknown command:%s\n", *argv);
       fflush(stdout);
-      if (input_file){
-        FreeString(1, trim_cmd);
-	free(argv);
-        QuitOperation(0, NULL);
-        fclose(input_file_ptr);
-        return false;
-      }
     }
     free(argv);
     FreeString(1, trim_cmd);
   }
   QuitOperation(0, NULL);
-  fclose(input_file_ptr);
+  if(input_file){
+    fclose(input_file_ptr);
+  }
 
   return true;
 }

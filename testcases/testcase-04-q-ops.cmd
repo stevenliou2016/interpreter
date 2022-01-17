@@ -1,15 +1,11 @@
-# Test of insert_head, insert_tail, remove_head and reverse
-new
-ih steven
-it mark
-reverse
-ih kenji
-it kevin
-reverse
+# Test of insert_tail
+it steven
+it mark 2
 it RAND 3
-reverse
-ih RAND 5
-reverse
-rh
-rh
-rh
+new
+it steven
+it mark 2
+it RAND 3
+it RAND 999999
+free
+quit

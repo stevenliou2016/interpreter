@@ -1,5 +1,6 @@
 #include "interpreter_mem.h"
 #include "interpreter_msg.h"
+#include <stdio.h>
 
 bool IsMemAlloc(void *ptr) {
   if (!ptr) {

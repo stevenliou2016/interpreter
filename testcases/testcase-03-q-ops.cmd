@@ -1,24 +1,11 @@
-# Test of insert_head, insert_tail and remove_head
+# Test of insert_head
+ih steven
+ih mark 2
+ih RAND 3
 new
 ih steven
-ih mark
-it ian
-it john
-ih kenji
-it josh
-rh
-rh
-rh
-rh
-rh
-rh
+ih mark 2
+ih RAND 3
+ih RAND 999999
 free
-new
-it steven
-ih mark
-rh
-ih kevin
-rh
-it kenji
-rh
-rh
+quit

@@ -1,12 +1,26 @@
-# Test of insert_head, insert_tail, size and sort
+# Test of insert_head, insert_tail and remove_head
 new
 ih steven
-it mark
-size
-it kenji
-ih kevin
-size
-it RAND 3
-sort
-ih RAND 3
-sort
+ih mark
+it john
+it kevin
+rh
+rh
+rh
+rh
+rh
+it john
+ih steven
+it kevin
+ih mark
+rh
+rh
+rh
+rh
+rh
+it john
+it kevin
+ih steven
+ih mark
+free
+quit
