@@ -110,7 +110,7 @@ bool QueueInsertTail(Queue *queue, char *str) {
 bool QueueRemoveHead(Queue *queue) {
   ListElement *remove_element = NULL;
 
-  if (queue == NULL || queue->head == NULL) {
+  if (queue == NULL || queue->head == NULL || queue->size == 0) {
     return false;
   }
   remove_element = queue->head;
@@ -118,6 +118,9 @@ bool QueueRemoveHead(Queue *queue) {
   free(remove_element->value);
   free(remove_element);
   queue->size--;
+  if(queue->size == 0){
+    queue->tail = NULL;
+  }
   return true;
 }
 
