@@ -15,6 +15,7 @@
 #include "interpreter_server.h"
 
 const char g_history_file_name[] = ".history_cmd";
+char *g_input_file = NULL;
 bool g_quit = false;
 Queue *g_queue = NULL;
 pid_t g_pid = -2; /* Server process ID; -2 is default value */
@@ -34,6 +35,7 @@ static bool QueueShowOperation(int argc, char **argv);
 static bool ServerOperation(int argc, char **argv);
 static bool ClientOperation(int argc, char **argv);
 static bool QuitOperation(int argc, char **argv);
+static bool SleepOperation(int argc, char **argv);
 static bool AddCmd(char *cmd, char *doc, CmdFunction op);
 
 bool ConsoleInit() {
@@ -98,6 +100,10 @@ bool ConsoleInit() {
     QuitOperation(0, NULL);
     return false;
   }
+  if(!AddCmd("sleep", "\t#Program sleeps for 1 second", SleepOperation)){
+    QuitOperation(0, NULL);
+    return false;
+  }
 
   return true;
 }
@@ -137,11 +143,14 @@ char *TrimSpace(char *str) {
   *(end + 1) = '\0';
 
   str_len = strlen(str_ptr);
-  new_str = malloc((str_len + 1) * sizeof(char));
+  /* allocating memory of str_len + 2 is for adding new line 
+     in the tail of command server and command client
+     getopt() needs new line */
+  new_str = malloc((str_len + 2) * sizeof(char));
   if(!IsMemAlloc(new_str)){
     return NULL;
   }
-  memset(new_str, 0, (str_len + 1) * sizeof(char));
+  memset(new_str, 0, (str_len + 2) * sizeof(char));
   strncpy(new_str, str_ptr, str_len);
   new_str[str_len] = '\0';
 
@@ -186,9 +195,6 @@ static char **SplitCmd(int *argc, char *cmd) {
 
   (*argc)++;
   *argv_ptr = strtok(cmd, delim);
-  /*if (strncmp("server", cmd, 6) != 0 && strncmp("client", cmd, 6) != 0) {
-    *argv_ptr = TrimNewLine(*argv_ptr);
-  }*/
   while ((*argc) < args_max_num && *argv_ptr++) {
     *argv_ptr = strtok(NULL, delim);
     if (strncmp("server", cmd, 6) != 0 && strncmp("client", cmd, 6) != 0) {
@@ -482,8 +488,8 @@ static bool QueueSortOperation(int argc, char **argv) {
   return true;
 }
 
-/* For signal SIGCLD */
-static void sig_cld() {
+/* Resets g_pid when the server shut down */
+static void SIGUSR2Handler() {
   g_pid = -2; /* Resets g_pid */
 }
 
@@ -494,30 +500,32 @@ static bool ServerOperation(int argc, char **argv) {
     if (g_pid != -2) {
       kill(g_pid, SIGUSR1);
       g_pid = -2;
-      QuitOperation(argc, argv);
+      //QuitOperation(argc, argv);
       return true;
     } else {
       ShowMsg("there is no server running\n");
-      QuitOperation(argc, argv);
+      //QuitOperation(argc, argv);
       return false;
     }
   }
   if (g_pid > 0) {
     ShowMsg("the server is running\n");
-    QuitOperation(argc, argv);
+    //QuitOperation(argc, argv);
     return true;
   }
-  signal(SIGCLD, sig_cld);
+  signal(SIGUSR2, SIGUSR2Handler);
   g_pid = fork();
   if (g_pid == -1) {
     ShowMsg("fork failed\n");
     return false;
   } else if (g_pid == 0) { /* Child process*/
     if (!RunServer(argc, argv)) {
-      QuitOperation(argc, argv);
+      //QuitOperation(argc, argv);
+      kill(getppid(), SIGUSR2);
       exit(-1);
     }
-    QuitOperation(argc, argv);
+    //QuitOperation(argc, argv);
+    kill(getppid(), SIGUSR2);
     exit(0);
   }
   /* For showing order of message correctly */
@@ -537,11 +545,17 @@ static bool ClientOperation(int argc, char **argv) {
   if(client_pid == 0){ /* Child process */
     if (!RunClient(argc, argv)) {
       ShowMsg("running client failed\n");
-      QuitOperation(argc, argv);
+      //QuitOperation(argc, argv);
       exit(-1);
     }
-    QuitOperation(argc, argv);
+    //QuitOperation(argc, argv);
     exit(0);
+  }else if(client_pid == -1){
+    ShowMsg("fork failed\n");
+    return false;
+  }
+  if(g_input_file){
+    wait(NULL);
   }
 
   return true;
@@ -556,10 +570,16 @@ static bool QuitOperation(int argc, char **argv) {
   }
   /* Inactivates server if it's running */
   if (g_pid != -2) {
-    kill(g_pid, SIGTERM);
+    kill(g_pid, SIGUSR1);
   }
   FreeCmdList(g_cmd_list);
   g_cmd_list = NULL;
+
+  return true;
+}
+
+static bool SleepOperation(int argc, char **argv) {
+  sleep(1);
 
   return true;
 }
@@ -629,6 +649,7 @@ bool RunConsole(char *input_file, char *log_file, bool is_visible) {
 
   g_is_visible = is_visible;
   g_log_file = log_file;
+  g_input_file = input_file;
 
   /* Loads history command from a file .history.cmd */
   if(!input_file){
