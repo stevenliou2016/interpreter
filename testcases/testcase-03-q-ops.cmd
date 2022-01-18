@@ -8,4 +8,3 @@ ih mark 2
 ih RAND 3
 ih RAND 999999
 free
-quit
