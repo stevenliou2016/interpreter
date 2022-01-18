@@ -594,9 +594,7 @@ bool AddHistoryCmd(const char *cmd) {
   if (g_history_len == g_history_max_len) {
     /* Remove the oldest history command */
     free(g_history[0]);
-    for(int i = 1; i < g_history_max_len; i++){
-      g_history[i - 1] = g_history[i];
-    }
+    memmove(g_history, g_history + 1, (g_history_len - 1) * sizeof(char *));
     g_history_len--;
     g_history[g_history_len] = malloc((cmd_len + 1) * sizeof(char));
     if(!IsMemAlloc(g_history[g_history_len])){
