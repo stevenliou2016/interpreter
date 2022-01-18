@@ -82,9 +82,14 @@ static int ConnectToServer(const char *ip, size_t port) {
 /* Sends a request to get a file */
 static void GetFile(const char *file_name, int client_fd) {
   size_t msg_len = 20;
-  size_t buf_len = msg_len + strlen(file_name);
-  char *buf = malloc(buf_len * sizeof(char));
+  size_t buf_len = 0;
+  char *buf = NULL;
 
+  if(!file_name || client_fd == -1){
+    return;
+  }
+  buf_len = msg_len + strlen(file_name);
+  buf = malloc((buf_len + 1) * sizeof(char));
   if (!IsMemAlloc(buf)) {
     ShowMsg("sending request failed\n");
   }
@@ -97,8 +102,12 @@ static void GetFile(const char *file_name, int client_fd) {
 
 /* Returns true if path is a directory */
 static bool IsDir(char *path) {
-  char *path_ptr = path;
+  char *path_ptr = NULL;
 
+  if(!path){
+    return NULL;
+  }
+  path_ptr = path;
   while (*path_ptr != '\0') {
     path_ptr++;
   }
@@ -111,9 +120,13 @@ static bool IsDir(char *path) {
 /* Sends a request to get a directory */
 static void GetDir(char *dir_name, int client_fd) {
   size_t msg_len = 20;
-  size_t buf_len = msg_len + strlen(dir_name);
+  size_t buf_len = 0;
   char *buf = NULL;
 
+  if(!dir_name || client_fd == -1){
+    return;
+  }
+  buf_len = msg_len + strlen(dir_name);
   buf = malloc(buf_len * sizeof(char));
   if (!IsMemAlloc(buf)) {
     ShowMsg("send request failed\n");
@@ -147,13 +160,15 @@ static bool DownloadFile(const char *file_name, const char *ip, size_t port) {
   }
   memset(server_buf, 0, (g_buf_max_size + 1) * sizeof(char));
   if ((client_fd = ConnectToServer(ip, port)) == -1) {
+    free(server_buf);
     return false;
   }
   GetFile(file_name, client_fd);
   RioReadInit(&rio, client_fd);
-  file_ptr = fopen(file_name, "w");
+  file_ptr = fopen(file_name, "a");
   if (file_ptr == NULL) {
     ShowMsg("opening file failed\n");
+    free(server_buf);
     return false;
   }
   while (read_num > 0) {
@@ -315,17 +330,23 @@ static bool DownloadDir(char *dir_name, const char *ip, size_t port) {
 
   file_list = malloc((file_list_len + 1) * sizeof(char *));
   if (!IsMemAlloc(file_list)) {
+    free(server_buf);
     return false;
   }
   memset(file_list, 0, (file_list_len + 1) * sizeof(char *));
 
   dir_list = malloc((dir_list_len + 1) * sizeof(char *));
   if (!IsMemAlloc(dir_list)) {
+    free(server_buf);
+    free(file_list);
     return false;
   }
   memset(dir_list, 0, (dir_list_len + 1) * sizeof(char *));
 
   if ((client_fd = ConnectToServer(ip, port)) == -1) {
+    free(server_buf);
+    free(file_list);
+    free(dir_list);
     return false;
   }
 
@@ -341,27 +362,48 @@ static bool DownloadDir(char *dir_name, const char *ip, size_t port) {
     if (IsDir(name)) {
       if (dir_list_idx > dir_list_len) {
         if ((new_list = DoubleSize(dir_list)) == NULL) {
+	  free(server_buf);
+          free(file_list);
+          free(dir_list);
           return false;
         }
         dir_list_len *= 2;
         dir_list = new_list;
       }
       if (AddNameToList(dir_list, dir_list_idx, name) == false) {
+	free(server_buf);
+        free(file_list);
+        free(dir_list);
         return false;
       }
       dir_list_idx++;
     } else {
       if ((name = CompletePath(dir_name, name)) == NULL) {
+	free(server_buf);
+        free(file_list);
+        free(dir_list);
         return false;
       }
       if (file_list_idx > file_list_len) {
         if ((new_list = DoubleSize(file_list)) == NULL) {
+          free(server_buf);
+          free(file_list);
+          free(dir_list);
+	  if(name){
+            free(name);
+	  }
           return false;
         }
         file_list_len *= 2;
         file_list = new_list;
       }
       if (AddNameToList(file_list, file_list_idx, name) == false) {
+        free(server_buf);
+        free(file_list);
+        free(dir_list);
+        if(name){
+          free(name);
+	}
         return false;
       }
       file_list_idx++;
@@ -401,15 +443,31 @@ bool RunClient(int argc, char **argv) {
   char *server_ip = NULL;
   const char default_server_ip[] = "140.118.155.192";
 
+  optind = 0; /* Initialize getopt() */
   while ((ch = getopt(argc, argv, "hf:c:p:d:")) != -1) {
     switch (ch) {
     case 'h': /* Usage */
       Usage(argv[0]);
+      if(file_name){
+        free(file_name);
+      }
+      if(dir_name){
+        free(dir_name);
+      }
+      if(server_ip){
+        free(server_ip);
+      }
       return true;
     case 'f': /* Sets which file you wanna download */
       file_name_len = strlen(argv[optind - 1]);
       file_name = malloc((file_name_len + 1) * sizeof(char));
       if (!IsMemAlloc(file_name)) {
+        if(dir_name){
+          free(dir_name);
+        }
+        if(server_ip){
+          free(server_ip);
+        }
         return false;
       }
       memset(file_name, 0, (file_name_len + 1) * sizeof(char));
@@ -420,10 +478,22 @@ bool RunClient(int argc, char **argv) {
       server_ip_len = strlen(argv[optind - 1]);
       if (server_ip_len > server_ip_max_len && server_ip_len < 7) {
         ShowMsg("It is a invalid IPv4 address\n");
+        if(file_name){
+          free(file_name);
+        }
+        if(dir_name){
+          free(dir_name);
+        }
         return false;
       }
       server_ip = malloc((server_ip_max_len + 1) * sizeof(char));
       if (!IsMemAlloc(server_ip)) {
+        if(file_name){
+          free(file_name);
+        }
+        if(dir_name){
+          free(dir_name);
+        }
         return false;
       }
       memset(server_ip, 0, (server_ip_max_len + 1) * sizeof(char));
@@ -434,6 +504,15 @@ bool RunClient(int argc, char **argv) {
       port = atoi(argv[optind - 1]);
       if (port > max_port || port < 0) {
         ShowMsg("It is not a valid port\n");
+        if(file_name){
+          free(file_name);
+        }
+        if(dir_name){
+          free(dir_name);
+        }
+        if(server_ip){
+          free(server_ip);
+        }
         return false;
       }
       break;
@@ -441,6 +520,12 @@ bool RunClient(int argc, char **argv) {
       dir_name_len = strlen(argv[optind - 1]);
       dir_name = malloc((dir_name_len + 1) * sizeof(char));
       if (!IsMemAlloc(dir_name)) {
+        if(file_name){
+          free(file_name);
+        }
+        if(server_ip){
+          free(server_ip);
+        }
         return false;
       }
       memset(dir_name, 0, (dir_name_len + 1) * sizeof(char));
@@ -449,6 +534,15 @@ bool RunClient(int argc, char **argv) {
       break;
     default:
       ShowMsg("Unknown option %c\n", ch);
+      if(file_name){
+        free(file_name);
+      }
+      if(dir_name){
+        free(dir_name);
+      }
+      if(server_ip){
+        free(server_ip);
+      }
       return false;
     }
   }
@@ -457,11 +551,26 @@ bool RunClient(int argc, char **argv) {
     if (server_ip) {
       if (!DownloadFile(file_name, server_ip, port)) {
         ShowMsg("download %s failed\n", file_name);
+        if(file_name){
+          free(file_name);
+        }
+        if(dir_name){
+          free(dir_name);
+        }
+        if(server_ip){
+          free(server_ip);
+        }
         return false;
       }
     } else {
       if (!DownloadFile(file_name, default_server_ip, port)) {
         ShowMsg("download %s failed\n", file_name);
+        if(file_name){
+          free(file_name);
+        }
+        if(dir_name){
+          free(dir_name);
+        }
         return false;
       }
     }
@@ -471,11 +580,26 @@ bool RunClient(int argc, char **argv) {
     if (server_ip) {
       if (!DownloadDir(dir_name, server_ip, port)) {
         ShowMsg("download directory %s failed\n", dir_name);
+        if(file_name){
+          free(file_name);
+        }
+        if(dir_name){
+          free(dir_name);
+        }
+        if(server_ip){
+          free(server_ip);
+        }
         return false;
       }
     } else {
       if (!DownloadDir(dir_name, default_server_ip, port)) {
         ShowMsg("download directory %s failed\n", dir_name);
+        if(file_name){
+          free(file_name);
+        }
+        if(dir_name){
+          free(dir_name);
+        }
         return false;
       }
     }

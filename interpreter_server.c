@@ -330,7 +330,7 @@ void SIGALRMHandler(){
 void SIGUSR1Handler(){
   g_server_running = false;
   /* Triggers SIGALRMHandler after 1 second */
-  alarm(5);
+  alarm(1);
 }
 
 bool RunServer(int argc, char **argv) {
@@ -343,12 +343,15 @@ bool RunServer(int argc, char **argv) {
   struct sockaddr_in client_addr;
   socklen_t client_len = sizeof client_addr;
 
+  optind = 0; /* Initializes getopt() */
   while ((c = getopt(argc, argv, "hd:p:s")) != -1) {
     switch (c) {
     case 'h': /* Usage */
       PrintUsage();
+      if(dir){
+        free(dir);
+      }
       return true;
-      break;
     case 'd': /* Set working directory */
       dir_len = strlen(optarg);
       dir = malloc((dir_len + 1) * sizeof(char));
@@ -368,13 +371,16 @@ bool RunServer(int argc, char **argv) {
       }
       free(dir);
       break;
-    case 's': /* Shut down server */
-      //return true;
+    case 's': 
+      break;
     case 'p': /* Set port */
       port = atoi(optarg);
       if (port < 0 || port > 65535) {
         ShowMsg("range of port is 0~65535\n");
-        exit(0);
+	if(dir){
+          free(dir);
+	}
+	return false;
       } else if (port == 0 && optarg[0] != '0') {
         ShowMsg("%s is not in the range 0~65535\n", optarg);
       }
@@ -384,8 +390,10 @@ bool RunServer(int argc, char **argv) {
       break;
     }
   }
-  server_fd = ServerSocketToListen(port);
-  if (server_fd < 0) {
+  if ((server_fd = ServerSocketToListen(port)) < 0) {
+    if(dir){
+      free(dir);
+    }
     exit(server_fd);
   }
 
