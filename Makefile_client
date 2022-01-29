@@ -1,0 +1,17 @@
+PROGRAM = client_prog
+PROJECT = interpreter
+CC = gcc
+CFLAGS = -g -c
+OBJS = client/$(PROJECT)_client.o $(PROJECT)_mem.o $(PROJECT)_rio.o $(PROJECT)_msg.o
+
+$(PROGRAM): $(OBJS)
+	$(CC) $(OBJS) -o $@
+
+%.o: %.c
+	$(CC) $(CFLAGS) $< -o $@
+
+
+.PHONY: clean
+
+clean:
+	rm $(PROGRAM) $(OBJS)
