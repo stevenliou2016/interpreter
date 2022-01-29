@@ -1,10 +1,8 @@
-# Test of insert_head
-ih steven
-ih mark 2
-ih RAND 3
+# Test of new
 new
-ih steven
-ih mark 2
-ih RAND 3
-ih RAND 999999
-free
+new
+new
+new
+new
+new
+quit

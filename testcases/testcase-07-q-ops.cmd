@@ -1,19 +1,26 @@
-# Test of insert_head, insert_tail, remove_head, size and reverse
-reverse
+# Test of insert_head, insert_tail and remove_head
 new
-reverse
 ih steven
-reverse
 ih mark
-reverse
-size
-reverse
+it john
+it kevin
 rh
 rh
 rh
-reverse
-ih RAND 999999
-it RAND 999999
-reverse
+rh
+rh
+it john
+ih steven
+it kevin
+ih mark
+rh
+rh
+rh
+rh
+rh
+it john
+it kevin
+ih steven
+ih mark
 free
 quit

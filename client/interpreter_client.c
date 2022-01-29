@@ -27,12 +27,12 @@ static char **DoubleSize(char **list) {
 }
 
 static void Usage(char *program_name) {
-  printf("\nUsage: %s [options] [args]\n", program_name);
-  printf("\tclient -h		#usage\n");
-  printf("\tclient -c serverIP	#connect to server(IPv4)\n");
-  printf("\tclient -f fileName	#download file\n");
-  printf("\tclient -p port\t	#port range 0~65353\n");
-  printf("\tclient -d directory	#download directory\n");
+  printf("Usage: %s [options] [args]\n", program_name);
+  printf("       client -h		#usage\n");
+  printf("       client -c serverIP	#connect to server(IPv4)\n");
+  printf("       client -f fileName	#download file\n");
+  printf("       client -p port\t	#port range 0~65353\n");
+  printf("       client -d directory	#download directory\n");
 }
 
 /* Connects to server

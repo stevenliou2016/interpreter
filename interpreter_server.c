@@ -18,13 +18,13 @@
 bool g_server_running = true;
 
 static void PrintUsage() {
-  printf("\tCommand\t\tDescription\n");
-  printf("\tserver\t\t#Use default port(9999), serve current directory\n");
-  printf("\tserver -h\t#Usage\n");
-  printf("\tserver -s \tInactivate server\n");
-  printf("\tserver -d dir\t#Use default port(9999), ");
+  printf("Usage: server [option] [args]\n");
+  printf("       server\t\t#Use default port(9999), serve current directory\n");
+  printf("       server -h\t#Usage\n");
+  printf("       server -s \t#Inactivate server\n");
+  printf("       server -d dir\t#Use default port(9999), ");
   printf("serve given directory\n");
-  printf("\tserver -p port\t#Use given port, serve current directory\n");
+  printf("       server -p port\t#Use given port, serve current directory\n");
 }
 
 static int ServerSocketToListen(size_t port) {

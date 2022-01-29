@@ -1,25 +1,18 @@
-# Test of insert_head, insert_tail, remove_head, size, reverse, sort and quit
-sort
+# Test of insert_head, insert_tail, remove_head and size
+size
 new
-sort
+size
+rh
+size
 ih steven
-sort
-reverse
-sort
-it kenji
-reverse
-sort
-reverse
+it mark
+size
 rh
 rh
 rh
-sort
-reverse
 size
 it RAND 999999
 ih RAND 999999
-sort
-reverse
 size
-sort
+free
 quit

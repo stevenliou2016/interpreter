@@ -1,11 +1,9 @@
-# Test of insert_tail
-it steven
-it mark 2
-it RAND 3
+# Test of free
+free
 new
-it steven
-it mark 2
-it RAND 3
-it RAND 999999
+free
+new
+new
+free
 free
 quit
