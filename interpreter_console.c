@@ -42,15 +42,15 @@ bool ConsoleInit() {
   g_cmd_list = NULL;
   srand(time(NULL)); /* For random string */
   /* Adds commands into command list */
-  if(!AddCmd("help", "\t#Show documents", HelpOperation)){
+  if(!AddCmd("help", "\t\t#Show documents", HelpOperation)){
     QuitOperation(0, NULL);
     return false;
   }
-  if(!AddCmd("new", "\t#Create a queue", QueueNewOperation)){
+  if(!AddCmd("new", "\t\t#Create a queue", QueueNewOperation)){
     QuitOperation(0, NULL);
     return false;
   }
-  if(!AddCmd("free", "\t#Delete a queue", QueueFreeOperation)){
+  if(!AddCmd("free", "\t\t#Delete a queue", QueueFreeOperation)){
     QuitOperation(0, NULL);
     return false;
   }
@@ -68,39 +68,39 @@ bool ConsoleInit() {
     QuitOperation(0, NULL);
     return false;
   }
-  if(!AddCmd("rh", "\t#Remove the first element", QueueRemoveHeadOperation)){
+  if(!AddCmd("rh", "\t\t#Remove the first element", QueueRemoveHeadOperation)){
     QuitOperation(0, NULL);
     return false;
   }
-  if(!AddCmd("size", "\t#Show the size of queue", QueueSizeOperation)){
+  if(!AddCmd("size", "\t\t#Show the size of queue", QueueSizeOperation)){
     QuitOperation(0, NULL);
     return false;
   }
-  if(!AddCmd("reverse", "\t#Reverse the queue", QueueReverseOperation)){
+  if(!AddCmd("reverse", "\t\t#Reverse the queue", QueueReverseOperation)){
     QuitOperation(0, NULL);
     return false;
   }
-  if(!AddCmd("sort", "\t#Sort the queue", QueueSortOperation)){
+  if(!AddCmd("sort", "\t\t#Sort the queue", QueueSortOperation)){
     QuitOperation(0, NULL);
     return false;
   }
-  if(!AddCmd("show", "\t#Show the queue", QueueShowOperation)){
+  if(!AddCmd("show", "\t\t#Show the queue", QueueShowOperation)){
     QuitOperation(0, NULL);
     return false;
   }
-  if(!AddCmd("server", "\t#Activate server", ServerOperation)){
+  if(!AddCmd("server", "\t\t#Activate server", ServerOperation)){
     QuitOperation(0, NULL);
     return false;
   }
-  if(!AddCmd("client", "\t#Activate client", ClientOperation)){
+  if(!AddCmd("client", "\t\t#Activate client", ClientOperation)){
     QuitOperation(0, NULL);
     return false;
   }
-  if(!AddCmd("quit", "\t#Exit program", QuitOperation)){
+  if(!AddCmd("quit", "\t\t#Exit program", QuitOperation)){
     QuitOperation(0, NULL);
     return false;
   }
-  if(!AddCmd("sleep", "\t#Program sleeps for 1 second", SleepOperation)){
+  if(!AddCmd("sleep", "\t\t#Program sleeps for 1 second", SleepOperation)){
     QuitOperation(0, NULL);
     return false;
   }
@@ -221,7 +221,7 @@ static bool IsQueueNULL() {
 static bool HelpOperation(int argc, char **argv) {
   CmdElementPtr cmd_list = g_cmd_list;
 
-  printf("\tCommand\tDescription\n");
+  printf("\tCommand         Description\n");
   fflush(stdout);
 
   while (cmd_list) {
@@ -500,17 +500,14 @@ static bool ServerOperation(int argc, char **argv) {
     if (g_pid != -2) {
       kill(g_pid, SIGUSR1);
       g_pid = -2;
-      //QuitOperation(argc, argv);
       return true;
     } else {
       ShowMsg("there is no server running\n");
-      //QuitOperation(argc, argv);
       return false;
     }
   }
   if (g_pid > 0) {
     ShowMsg("the server is running\n");
-    //QuitOperation(argc, argv);
     return true;
   }
   signal(SIGUSR2, SIGUSR2Handler);
@@ -520,11 +517,9 @@ static bool ServerOperation(int argc, char **argv) {
     return false;
   } else if (g_pid == 0) { /* Child process*/
     if (!RunServer(argc, argv)) {
-      //QuitOperation(argc, argv);
       kill(getppid(), SIGUSR2);
       exit(-1);
     }
-    //QuitOperation(argc, argv);
     kill(getppid(), SIGUSR2);
     exit(0);
   }
@@ -545,16 +540,19 @@ static bool ClientOperation(int argc, char **argv) {
   if(client_pid == 0){ /* Child process */
     if (!RunClient(argc, argv)) {
       ShowMsg("running client failed\n");
-      //QuitOperation(argc, argv);
       exit(-1);
     }
-    //QuitOperation(argc, argv);
     exit(0);
   }else if(client_pid == -1){
     ShowMsg("fork failed\n");
     return false;
   }
   if(g_input_file){
+    wait(NULL);
+  }
+
+  /* For showing order of message correctly */
+  if (argc > 1 && argv[1] && strncmp(argv[1], "-h", 2) == 0) {
     wait(NULL);
   }
 
@@ -720,7 +718,6 @@ bool RunConsole(char *input_file, char *log_file, bool is_visible) {
       continue;
     }
 
-    ShowMsg("%s\n", trim_cmd);
     if (!input_file) {
       /* Adds a new command into command list */
       if(!AddHistoryCmd(trim_cmd)) {

@@ -1,18 +1,11 @@
-# Test of insert_head, insert_tail, remove_head and size
-size
+# Test of insert_tail
+it steven
+it mark 2
+it RAND 3
 new
-size
-rh
-size
-ih steven
-it mark
-size
-rh
-rh
-rh
-size
+it steven
+it mark 2
+it RAND 3
 it RAND 999999
-ih RAND 999999
-size
 free
 quit

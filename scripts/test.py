@@ -22,16 +22,16 @@ def runTest(testCase, isVisible, isColored, useValgrind):
     WHITE = '\033[0m'
     color = WHITE
     command = ['./interpreter']
-    testCases = ['testcase-01-q-ops.cmd',
-                 'testcase-02-q-ops.cmd',
+    testCases = ['testcase-01-server.cmd',
+                 'testcase-02-client.cmd',
                  'testcase-03-q-ops.cmd',
                  'testcase-04-q-ops.cmd',
                  'testcase-05-q-ops.cmd',
                  'testcase-06-q-ops.cmd',
                  'testcase-07-q-ops.cmd',
                  'testcase-08-q-ops.cmd',
-                 'testcase-09-server.cmd',
-                 'testcase-10-client.cmd']
+                 'testcase-09-q-ops.cmd',
+                 'testcase-10-q-ops.cmd']
     
     scores = [10, 10, 10, 10, 10, 10, 10, 10, 10, 10]
 
