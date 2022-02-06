@@ -719,8 +719,9 @@ bool RunConsole(char *input_file, char *log_file, bool is_visible) {
       FreeString(1, trim_cmd);
       continue;
     }
-
-    ShowMsg("%s\n", trim_cmd);
+    if(input_file){
+        ShowMsg("%s\n", trim_cmd);
+	}
     if (!input_file) {
       /* Adds a new command into command list */
       if(!AddHistoryCmd(trim_cmd)) {
