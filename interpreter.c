@@ -12,10 +12,11 @@
 
 void Usage(char *program_name) {
   printf("Usage: %s [options] [args]\n", program_name);
-  printf("\t-h			#Usage\n");
-  printf("\t-f INPUT_FILE	#Read command from file\n");
-  printf("\t-v 			#Enable print messages\n");
-  printf("\t-l LOG_FILE		#Log print messages\n");
+  printf("Options:\n");
+  printf("        -h              #Usage\n");
+  printf("        -f INPUT_FILE   #Read commands from a file\n");
+  printf("        -v              #Make messages visible\n");
+  printf("        -l LOG_FILE     #Log messages\n");
 }
 
 int main(int argc, char **argv) {
